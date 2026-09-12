@@ -9,12 +9,21 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    ".next-auth-tests/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
+    ".sites-runtime/**",
+    ".wrangler/**",
+    ".vinext/**",
+    ".pnpm-store/**",
+    "dist/**",
+    "coverage/**",
+    ".firebase/**",
+    "outputs/**",
   ]),
   {
-    files: ["components/ui/**/*.{ts,tsx}", "hooks/use-mobile.ts"],
+    files: ["src/components/ui/**/*.{ts,tsx}", "src/components/hooks/use-mobile.ts"],
     rules: {
       // These files are vendored verbatim from shadcn@4.17.0. Keep the
       // registry source intact while applying the stricter rules to Site code.

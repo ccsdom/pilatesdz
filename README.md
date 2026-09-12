@@ -1,126 +1,74 @@
-# vinext-starter
+# Pilates Center Alger
 
-A clean full-stack starter running on [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and Drizzle support.
+Fondation Next.js App Router, React, TypeScript strict et Tailwind CSS. L’authentification, les accès et l’annuaire des clientes fonctionnent avec les émulateurs Firebase locaux. L’identité visuelle est conservée ; les réservations et paiements restent à développer.
 
-## Prerequisites
+## Démarrage local
 
-- Node.js `>=22.13.0`
-- Portable: Windows, macOS, or Linux; no Bash required
-- Managed Linux: managed Linux runtime with Bash, `flock`, `curl`, `sha256sum`, and GNU `timeout`
-- Git is required only for publishing
-
-## Sites Lifecycle
-
-The Sites initializer copies the shared starter and selects managed-linux only when `SITES_MANAGED_LINUX_CONTAINER=1`; otherwise it selects portable. It saves the selection only in ignored `.sites-runtime/execution-profile.json`. Both profiles copy/configure first, then use the plugin's separate `install-dependencies.mjs` step to measure installation independently. Edit source under `app/` and follow the Sites skill for installation, preview, builds, and publishing.
-
-Whenever reopening or moving a checkout, run `node <plugin-root>/scripts/configure-execution-profile.mjs` before project commands. Profile changes do not alter tracked source or require reinstalling otherwise-valid dependencies; restart an existing preview to use the new selection. Do not commit or upload `.sites-runtime/`.
-
-This starter does not use `wrangler.jsonc`.
-
-`install:ci` runs `npm ci` once against the shared lockfile, disables parent-workspace discovery, and includes required dev/optional dependencies despite production/omit settings. Sharp defaults to prebuilt binaries unless explicitly configured otherwise. Do not overlap installers.
-
-- **Portable:** Preserve host HOME, npm cache, registry, proxy, temporary paths, retry/concurrency settings, and lifecycle-script policy. Use `--prefer-offline --no-audit --no-fund`.
-- **Managed Linux:** Use the existing project-local HOME/cache/tmp setup and Linux install lock, tarball preflight, and timeout. Restore the image-seeded npm cache only when its lockfile hash matches; retain network fallback. Builds keep their existing timeout. These helpers are not invoked by the portable profile.
-
-`scripts/sites-env.mjs` preserves the caller's HOME, npm cache, proxy, XDG, and temporary-directory configuration while defaulting Wrangler and Miniflare state to the checkout. If npm reports an unwritable cache, select a writable path with `npm_config_cache` for that install. The `dev` and `start` scripts also keep Wrangler logs inside the checkout. Generated `.sites-runtime/` and `.wrangler/` directories are disposable and ignored by Git.
-
-On portable, `npm run dev` uses `vinext dev` with HMR, starting at port 5173. Vinext records the running server in ignored `.vinext/` state, rejects an ordinary duplicate launch, and recovers stale state after a stopped process; exactly simultaneous starts can race. Pass `--port <port>` or `--hostname <host>` after `npm run dev --` when needed; keep portable previews on loopback.
-
-On managed Linux, use `sites-preview start` only for requested browser QA. The project's dev script runs Vite and accepts the supervisor's `--host 0.0.0.0 --port 4173 --strictPort` arguments. The internal browser uses `http://terminal.local:4173/`; it is not a user-facing URL. The supervisor owns the preview lifecycle. The ignored local profile survives the supervisor's cleared process environment.
-
-The portable profile simulates ChatGPT sign-in only for loopback development requests. Visit `/signin-with-chatgpt?return_to=/` to sign in as `local_seedy` (`seedy@sites.test`, display name `Seedy`) and `/signout-with-chatgpt?return_to=/` to sign out. The development cookie preserves that identity across server restarts. Mock auth is disabled in the managed-linux profile and is not included in production builds; hosted authentication remains dispatch-owned.
-
-The Worker uses `vinext/server/fetch-handler`, including Vinext's config-aware image handling. After building, `npm start` runs that Worker locally through Wrangler on `127.0.0.1`, sharing `.wrangler/state` with dev preview and local D1 migrations; it does not deploy the site or simulate sign-in. Use the URL printed by the server. Pass `npm start -- --port <port>` to select a different built-preview port.
-
-Local previews use Miniflare's placeholder `Request.cf` metadata without a network lookup. Set `CLOUDFLARE_CF_FETCH_ENABLED=true` to opt into fetching preview metadata; this setting does not change hosted request metadata.
-
-Local tool usage metrics are disabled by default. Set `WRANGLER_SEND_METRICS=true` to opt in.
-
-## Included Shape
-
-- edit site code under `app/`
-- `app/chatgpt-auth.ts` provides optional dispatch-owned ChatGPT sign-in helpers
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/index.ts` reads the D1 binding from the Cloudflare Worker environment
-- `db/schema.ts` starts intentionally empty
-- `@cloudflare/workers-types` provides Worker types; `cloudflare-env.d.ts` declares optional `DB`/`BUCKET` bindings—update these declarations if binding names change
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
-
-## Workspace Auth Headers
-
-Signed-in visitors receive both `oai-authenticated-user-id` and `oai-authenticated-user-email`. Private Sites require every visitor to sign in; public Sites may also have anonymous visitors, for whom neither header is present.
-
-The user ID is stable for the same user on the same Site and different across Sites. Use it as the durable user key; use email and name for display or contact purposes.
-
-SIWC-authenticated workspace sites may also receive `oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty `name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by `oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const userId = requestHeaders.get("oai-authenticated-user-id");
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
-```
-
-## Optional Dispatch-Owned ChatGPT Sign-In
-
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs optional or required ChatGPT sign-in:
-
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use the returned `userId` as the stable user key for user-owned records; do not use email as a durable identifier.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send anonymous visitors through Sign in with ChatGPT.
-- In a Server Component, start sign-in with `<a href={chatGPTSignInPath(returnTo)} target="_top">`. The auth helper module is server-only; do not import it into a Client Component.
-- Do not use `fetch`, XHR, a client-side router, or a framework link that can prefetch the sign-in route. SIWC must start as a top-level navigation.
-- Never request the AuthAPI authorization endpoint directly. The dispatch-owned `/signin-with-chatgpt` route must start the SIWC flow.
-- Use `chatGPTSignOutPath(returnTo)` for browser sign-out links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because they depend on per-request identity headers.
-
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the OAuth cookies, and identity header injection. Do not implement app routes for those reserved paths. Routes that do not import and call the helper remain anonymous-compatible.
-
-SIWC establishes identity only; it does not prove workspace membership. Use the Sites hosting platform's access policy controls for workspace-wide restrictions, or enforce explicit server-side membership or allowlist checks.
-
-Use SIWC for account pages, user-specific dashboards, saved records, and write actions tied to the current ChatGPT user. Leave public content anonymous.
-
-## Local D1 migrations
-
-For a D1-backed local preview, generate SQL with `npm run db:generate`. Build once through the Sites skill's build entrypoint (or `npm run build` for standalone use) to generate `dist/server/wrangler.json`, rebuilding if bindings change. From the project root, apply each pending migration in order:
+Prérequis : Node.js 22 (au moins 22.13), pnpm 11.25.0. Java 21 est nécessaire uniquement pour les émulateurs Firebase.
 
 ```sh
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_example.sql
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
-Replace the filename with the pending migration and `DB` with your D1 binding name if different. Use `.wrangler/state`, not `.wrangler/state/v3`; Wrangler adds the versioned directories. Do not replay migrations already applied locally. This updates only the preview database; publishing applies production migrations separately.
+Ouvrir http://127.0.0.1:3000. Les commandes serveur écoutent uniquement sur la machine locale. Aucun compte Firebase ni fichier `.env.local` n'est nécessaire pour afficher les pages.
 
-## Diagnostic Commands
+- `/` : maquette publique, identité visuelle conservée.
+- `/crm` : aperçu avec données fictives, réservé aux administratrices du centre.
+- `/espace-cliente` : accueil privé réservé aux clientes du centre ; services métier à venir.
+- `/connexion` : connexion e-mail/mot de passe, fonctionnelle avec les émulateurs locaux.
+- `/crm/acces` : invitations et désactivation des accès clientes, réservé aux administratrices.
+- `/crm/clientes` : fiches clientes du centre, recherche et pagination.
+- `/crm/clientes/nouvelle` et `/crm/clientes/{id}` : création, modification et invitation depuis une fiche.
+- `/connexion/mot-de-passe` : récupération et choix du mot de passe.
 
-- `npm run install:ci`: perform the one locked dependency install
-- `npm run dev`: start the Vite/Vinext development server
-- `npm run build`: build the deployable Sites artifact
-- `npm run start`: preview the built Worker locally with D1/R2 support
-- `npm run db:generate`: generate Drizzle migrations after schema changes
+Pour tester la connexion, lancer `pnpm emulators` dans un terminal, puis `pnpm seed:local` dans un second. Les deux comptes fictifs sont enregistrés dans `.firebase/demo-accounts.json`, ignoré par Git. Lancer ensuite `pnpm dev:local` et ouvrir http://127.0.0.1:3100. Ce parcours fournit explicitement les paramètres locaux sans créer de `.env.local`. Chaque exécution du seed renouvelle les mots de passe des deux comptes de démonstration. Aucun compte réel ni e-mail d'invitation n'est créé ou envoyé.
 
-When using the Sites plugin, follow its skill instructions for installation, builds, and publishing. These npm commands remain available for standalone use.
+Le sélecteur de maquettes a été retiré de l'accueil. Le CRM relie la rubrique Clientes à l’annuaire Firestore et affiche un aperçu des fiches enregistrées. Le planning, les forfaits et les finances restent des éléments de démonstration.
 
-The portable build runs Vinext directly without a host `timeout` command. The managed-linux build uses `scripts/build-verified.sh` and its existing `SITES_BUILD_TIMEOUT` setting.
+Pour relier les anciens comptes de démonstration à leurs fiches sans changer leurs mots de passe, exécuter `pnpm sync:local`. Le script est relançable et conserve les désactivations. `pnpm seed:local` assure aussi cette association lors de l’initialisation, mais renouvelle toujours les mots de passe des comptes réservés.
 
-## Learn More
+## Vérifications
 
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+```sh
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+pnpm start
+pnpm test:security
+pnpm test:auth
+```
+
+`pnpm start` nécessite d'abord `pnpm build`. Le build public réussit sans configuration Firebase ; les accès privés sans session redirigent vers la connexion. Firebase reste désactivé en production, donc utiliser `pnpm dev:local` pour tester l'authentification. Vitest exécute les tests unitaires sans réseau. Les tests de sécurité lancent Auth, Firestore et Storage localement, testent le refus des accès clients, puis arrêtent les émulateurs. `pnpm test:auth` démarre également un serveur Next éphémère sur le port 3102 et dans `.next-auth-tests` pour tester les API et pages protégées. Exécuter les deux suites d’émulateurs l’une après l’autre. Elles utilisent les ports de test 9098, 8082, 9198, 4402, 4502 et 9152, distincts de la démonstration ; celle-ci peut rester ouverte. Le premier lancement télécharge les binaires officiels dans `.firebase/cache/`.
+
+## Firebase local uniquement
+
+Pour un futur développement utilisant les SDK, copier `.env.example` dans `.env.local`, puis lancer `pnpm emulators`. Le projet est obligatoirement `demo-pilates-center-alger`, les trois hôtes sont explicitement locaux, et une configuration incomplète provoque une erreur. Les paramètres du navigateur doivent correspondre à ceux du serveur et de `firebase.json`.
+
+Les SDK sont initialisés à la demande pour l'authentification ; la page publique n'en dépend pas. Firebase réel est volontairement indisponible dans cette fondation : les adaptateurs refusent un autre projet, des hôtes distants ou un appel en production. Ne pas supprimer ces protections pour mettre en ligne : préparer séparément la configuration cloud et les identités serveur après validation.
+
+Firebase Authentication identifiera les utilisateurs. Firestore contiendra les documents structurés. Storage contiendra les futurs fichiers ; les ressources de marque restent dans `public/brand`. Firebase Admin est marqué `server-only` et nécessite le runtime Node.js. Il contourne les règles : chaque futur service devra vérifier session, adhésion au centre, rôle et propriétaire avant d'utiliser un repository. Les règles actuelles refusent toutes les lectures et écritures clientes, même avec une revendication `admin`.
+
+## Organisation
+
+- `app/` : routes et composition des pages.
+- `src/components/` : marque, composants UI et présentation partagée.
+- `src/features/` : vues publiques, fiches clientes et aperçu CRM avec fixtures restantes explicites.
+- `src/domain/` : politiques pures, indépendantes des SDK.
+- `src/config/` et `src/lib/firebase/` : validation locale et initialisation différée des SDK.
+- `tests/unit/` et `tests/security/` : contrôles de configuration, périmètre centre et règles Firebase.
+
+`app/api/auth/`, `src/services/auth-service.ts` et `src/repositories/firestore/memberships.ts` assurent les sessions et les accès par centre. Les rôles locaux sont `client` et `admin`. Le navigateur conserve uniquement un cookie opaque `HttpOnly`, d'une durée de huit heures ; le jeton Firebase reste côté serveur. Les adhésions sont revérifiées à chaque requête privée. L’administration peut créer un accès cliente et le désactiver dans son centre. Aucun écran d’inscription publique ou de création d’administratrice n’est fourni.
+
+Pour tester une invitation, ouvrir **Gestion des accès** depuis le CRM administrateur, créer une cliente fictive et ouvrir le lien local affiché. Pour tester **Mot de passe oublié ?**, soumettre l’adresse du compte, lancer `pnpm inbox:local`, puis ouvrir le lien correspondant dans `.firebase/boite-reception.json`. Ce fichier contient uniquement les messages simulés et est ignoré par Git. Aucun e-mail réel n’est envoyé.
+
+Le catalogue UI, les styles vendor et leur licence sont conservés. Les caches anciens `.sites-runtime`, `.wrangler` et `.vinext` ne participent plus à l'exécution ; ils restent ignorés et n'ont pas été nettoyés. Le stockage pnpm local est `.pnpm-store/`. Le délai de maturité des paquets et le contrôle des scripts d'installation sont conservés.
+
+Voir [le plan d'architecture](docs/architecture/fondation-technique.md) et [le bilan de migration](docs/architecture/migration-nextjs-firebase.md). Aucun déploiement n'est configuré.
+
+Voir également [l'authentification locale et ses limites](docs/architecture/authentification-locale.md).
+
+La suite est décrite dans [la gestion locale des accès](docs/architecture/gestion-acces-locale.md), avec les limites de provisionnement et les décisions avant production.
+
+La [gestion des clientes](docs/architecture/gestion-clientes-locale.md) décrit le modèle, les transactions, la recherche et les 82 tests. Le statut de suivi d’une fiche reste distinct de son autorisation de connexion. Une adresse devient non modifiable dans la fiche dès la préparation d’un accès ; son changement nécessite un parcours de vérification distinct.

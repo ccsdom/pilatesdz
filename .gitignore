@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.next-auth-tests/
 /.vinext/
 /out/
 
@@ -30,6 +31,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+/.pnpm-store/
+/.firebase/
+*-debug.log
+*.tsbuildinfo
 
 # vercel
 .vercel

@@ -1,0 +1,43 @@
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { getAuthService, SESSION_COOKIE } from "@/lib/auth/server";
+import { getClientService } from "@/lib/clients/server";
+import { authErrorResponse } from "@/lib/auth/http";
+import { isTrustedMutation, readLimitedBody } from "@/lib/auth/request-policy";
+import { ManagementError } from "@/domain/ports/access-management";
+import { clientIdSchema, clientInputSchema } from "@/domain/models/client";
+
+export const runtime = "nodejs";
+const input = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("create"), profile: clientInputSchema }).strict(),
+  z.object({ action: z.literal("update"), id: clientIdSchema, version: z.number().int().positive(), profile: clientInputSchema }).strict(),
+  z.object({ action: z.literal("invite"), id: clientIdSchema }).strict(),
+]);
+const json = (data: unknown, status = 200) => NextResponse.json(data, { status, headers: { "Cache-Control": "no-store" } });
+const failure = (error: unknown) => error instanceof ManagementError ? json({ error: error.message }, error.status) : authErrorResponse(error);
+
+export async function GET(request: NextRequest) {
+  try {
+    const actor = await getAuthService().authorize(request.cookies.get(SESSION_COOKIE)?.value, ["admin"]);
+    const params = request.nextUrl.searchParams;
+    const id = params.get("id");
+    return json(id ? await getClientService().get(actor, id) : await getClientService().list(actor, params.get("q") ?? "", params.get("after") ?? undefined));
+  } catch (error) { return failure(error); }
+}
+
+export async function POST(request: NextRequest) {
+  if (!isTrustedMutation(request.headers.get("origin"), request.headers.get("content-type"), process.env.APP_ORIGIN)) return json({ error: "Requête non autorisée." }, 403);
+  try {
+    const actor = await getAuthService().authorize(request.cookies.get(SESSION_COOKIE)?.value, ["admin"]);
+    let raw;
+    try { raw = await readLimitedBody(request); } catch { return json({ error: "Requête trop volumineuse." }, 413); }
+    let parsed;
+    try { parsed = input.safeParse(JSON.parse(raw)); } catch { return json({ error: "Requête invalide." }, 400); }
+    if (!parsed.success) return json({ error: "Vérifiez les informations de la fiche." }, 400);
+    const service = getClientService();
+    const data = parsed.data;
+    if (data.action === "create") return json({ profile: await service.create(actor, data.profile) }, 201);
+    if (data.action === "update") return json({ profile: await service.update(actor, data.id, data.version, data.profile) });
+    return json(await service.invite(actor, data.id));
+  } catch (error) { return failure(error); }
+}

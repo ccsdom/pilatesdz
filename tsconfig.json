@@ -24,12 +24,11 @@
     ],
     "paths": {
       "@/*": [
-        "./*"
+        "./src/*"
       ]
     },
     "types": [
-      "node",
-      "@cloudflare/workers-types"
+      "node"
     ]
   },
   "include": [
@@ -38,10 +37,16 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    ".next-auth-tests/types/**/*.ts",
+    ".next-auth-tests/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "examples"
+    ".next-auth-tests",
+    ".sites-runtime",
+    ".wrangler",
+    ".vinext",
+    ".pnpm-store"
   ]
 }

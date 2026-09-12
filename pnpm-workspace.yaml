@@ -1,16 +1,21 @@
-# Copied Sites are standalone projects and cannot inherit the monorepo policy.
+# Keep the existing dependency maturity and install-script protections.
 minimumReleaseAge: 10080
 minimumReleaseAgeIgnoreMissingTime: false
 trustLockfile: false
 strictDepBuilds: true
 allowBuilds:
+  # Explicit configuration only; do not infer Firebase config during install.
+  '@firebase/util': false
+  # Optional version-scheme notice, unnecessary at runtime.
+  protobufjs: false
+  # Native regex dependency used by the Firebase CLI.
+  re2: true
   esbuild: true
   fsevents: true
   sharp: true
   unrs-resolver: true
-  workerd: true
-storeDir: ${SITES_PNPM_SHARED_STORE:-.sites-runtime/pnpm-store}
-cacheDir: ${SITES_PNPM_SHARED_STORE:-.sites-runtime/pnpm-store}/policy-cache
+storeDir: .pnpm-store
+cacheDir: .pnpm-store/policy-cache
 enableGlobalVirtualStore: false
 # A later project-only session must not mutate a shared-store inode through node_modules.
 packageImportMethod: clone-or-copy
