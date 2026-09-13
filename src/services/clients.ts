@@ -39,7 +39,8 @@ export function createClientService(repository: ClientRepository, accounts: Acco
         }
       }
       await repository.link(actor, clientId, uid); // Recheck authorization and status after the Auth call.
-      return { uid, clientId, invitationUrl: await accounts.invitation(profile.email) };
+      const invitationUrl = await accounts.invitation(profile.email);
+      return { uid, clientId, invitationUrl, emailAccepted: invitationUrl === null };
     },
   };
 }

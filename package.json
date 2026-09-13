@@ -16,6 +16,7 @@
     "test:security": "node scripts/firebase-local.mjs test",
     "emulators": "node scripts/firebase-local.mjs start",
     "dev:local": "node scripts/dev-local.mjs",
+    "dev:cloud": "node scripts/dev-cloud.mjs",
     "seed:local": "node --experimental-strip-types scripts/seed-local.mjs",
     "sync:local": "node --experimental-strip-types scripts/sync-clients-local.mjs",
     "test:auth": "node scripts/firebase-local.mjs auth-test",

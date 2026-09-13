@@ -37,6 +37,17 @@ describe.each(["anonymous", "client", "admin", "other-center"])("Default deny: %
     await assertFails(getDoc(doc(db, "centers/alger/clientEmails/example")));
     await assertFails(setDoc(doc(db, "centers/alger/clientEmails/example"), { clientId: "self" }));
     await assertFails(setDoc(target, { centerId: "alger", authUid: identity, status: "active" }));
+    await assertFails(getDoc(doc(db, "centers/alger/sessions/example")));
+    await assertFails(setDoc(doc(db, "centers/alger/sessions/example"), { capacity: 99, bookedCount: 0 }));
+    await assertFails(getDocs(collection(db, "centers/alger/sessions/example/bookings")));
+    await assertFails(setDoc(doc(db, "centers/alger/sessions/example/bookings/self"), { status: "confirmed" }));
+    await assertFails(setDoc(doc(db, "centers/alger/sessions/example/bookings/self"), { attendance: { status: "present", version: 1 } }));
+    await assertFails(getDocs(collection(db, "centers/alger/sessions/example/bookings/self/attendanceEvents")));
+    await assertFails(setDoc(doc(db, "centers/alger/sessions/example/bookings/self/attendanceEvents/fake"), { to: "present" }));
+    await assertFails(getDoc(doc(db, "centers/alger/clients/example/packages/test")));
+    await assertFails(setDoc(doc(db, "centers/alger/clients/example/packages/test"), { remaining: 100 }));
+    await assertFails(getDocs(collection(db, "centers/alger/clients/example/packages/test/movements")));
+    await assertFails(setDoc(doc(db, "centers/alger/clients/example/packages/test/movements/fake"), { delta: 100 }));
   });
   it("denies file read, list, upload and delete", async () => {
     const context = identity === "anonymous" ? env.unauthenticatedContext() : env.authenticatedContext(identity);

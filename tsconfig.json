@@ -39,11 +39,14 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts",
     ".next-auth-tests/types/**/*.ts",
-    ".next-auth-tests/dev/types/**/*.ts"
+    ".next-auth-tests/dev/types/**/*.ts",
+    ".next-cloud/types/**/*.ts",
+    ".next-cloud/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
     ".next-auth-tests",
+    ".next-cloud",
     ".sites-runtime",
     ".wrangler",
     ".vinext",

@@ -19,7 +19,7 @@ describe("access management", () => {
   });
   it("attaches a new client to the authenticated administrator's center", async () => {
     const { service, members } = setup();
-    await expect(service.invite(admin, "x@pilates.test", "X")).resolves.toEqual({ uid: "new-client", invitationUrl: "local-link" });
+    await expect(service.invite(admin, "x@pilates.test", "X")).resolves.toEqual({ uid: "new-client", invitationUrl: "local-link", emailAccepted: false });
     expect(members.add).toHaveBeenCalledWith(admin, { uid: "new-client", email: "x@pilates.test", name: "X", active: true });
   });
   it("does not issue a link when membership creation fails", async () => {
@@ -46,4 +46,11 @@ describe("access management", () => {
     await expect(service.invitation(admin, "client")).rejects.toMatchObject({ status: 403 });
     expect(accounts.invitation).not.toHaveBeenCalled();
   });
+});
+
+it("returns an email acknowledgement without an action link for cloud invitations", async () => {
+  const { accounts, service } = setup();
+  accounts.invitation.mockResolvedValue(null);
+  await expect(service.invite(admin, "recipient@example.invalid", "Cliente")).resolves.toEqual({ uid: "new-client", invitationUrl: null, emailAccepted: true });
+  await expect(service.invitation(admin, "client")).resolves.toEqual({ invitationUrl: null, emailAccepted: true });
 });

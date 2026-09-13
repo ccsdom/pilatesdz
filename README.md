@@ -1,6 +1,6 @@
 # Pilates Center Alger
 
-Fondation Next.js App Router, React, TypeScript strict et Tailwind CSS. L’authentification, les accès et l’annuaire des clientes fonctionnent avec les émulateurs Firebase locaux. L’identité visuelle est conservée ; les réservations et paiements restent à développer.
+Fondation Next.js App Router, React, TypeScript strict et Tailwind CSS. L’authentification, les accès, l’annuaire des clientes, le planning, les réservations et les forfaits fonctionnent avec les émulateurs Firebase locaux. L’identité visuelle est conservée ; les paiements restent à développer.
 
 ## Démarrage local
 
@@ -14,17 +14,20 @@ pnpm dev
 Ouvrir http://127.0.0.1:3000. Les commandes serveur écoutent uniquement sur la machine locale. Aucun compte Firebase ni fichier `.env.local` n'est nécessaire pour afficher les pages.
 
 - `/` : maquette publique, identité visuelle conservée.
-- `/crm` : aperçu avec données fictives, réservé aux administratrices du centre.
-- `/espace-cliente` : accueil privé réservé aux clientes du centre ; services métier à venir.
+- `/crm` : aperçu des clientes et du planning enregistrés, avec finances fictives, réservé aux administratrices du centre.
+- `/espace-cliente` : planning quotidien, réservation et annulation de sa propre place.
+- `/crm/planning`, `/crm/planning/nouvelle` et `/crm/planning/{id}` : planning quotidien, création des séances, participantes et annulations.
 - `/connexion` : connexion e-mail/mot de passe, fonctionnelle avec les émulateurs locaux.
 - `/crm/acces` : invitations et désactivation des accès clientes, réservé aux administratrices.
 - `/crm/clientes` : fiches clientes du centre, recherche et pagination.
 - `/crm/clientes/nouvelle` et `/crm/clientes/{id}` : création, modification et invitation depuis une fiche.
+- `/crm/forfaits` et `/crm/clientes/{id}/forfaits` : attribution et suivi des crédits.
+- `/espace-cliente/forfaits` : soldes et validité des forfaits personnels.
 - `/connexion/mot-de-passe` : récupération et choix du mot de passe.
 
 Pour tester la connexion, lancer `pnpm emulators` dans un terminal, puis `pnpm seed:local` dans un second. Les deux comptes fictifs sont enregistrés dans `.firebase/demo-accounts.json`, ignoré par Git. Lancer ensuite `pnpm dev:local` et ouvrir http://127.0.0.1:3100. Ce parcours fournit explicitement les paramètres locaux sans créer de `.env.local`. Chaque exécution du seed renouvelle les mots de passe des deux comptes de démonstration. Aucun compte réel ni e-mail d'invitation n'est créé ou envoyé.
 
-Le sélecteur de maquettes a été retiré de l'accueil. Le CRM relie la rubrique Clientes à l’annuaire Firestore et affiche un aperçu des fiches enregistrées. Le planning, les forfaits et les finances restent des éléments de démonstration.
+Le sélecteur de maquettes a été retiré de l'accueil. Le CRM relie les rubriques Clientes et Planning à Firestore. Les forfaits sont maintenant enregistrés avec leurs crédits ; les finances restent des éléments de démonstration.
 
 Pour relier les anciens comptes de démonstration à leurs fiches sans changer leurs mots de passe, exécuter `pnpm sync:local`. Le script est relançable et conserve les désactivations. `pnpm seed:local` assure aussi cette association lors de l’initialisation, mais renouvelle toujours les mots de passe des comptes réservés.
 
@@ -72,3 +75,11 @@ Voir également [l'authentification locale et ses limites](docs/architecture/aut
 La suite est décrite dans [la gestion locale des accès](docs/architecture/gestion-acces-locale.md), avec les limites de provisionnement et les décisions avant production.
 
 La [gestion des clientes](docs/architecture/gestion-clientes-locale.md) décrit le modèle, les transactions, la recherche et les 82 tests. Le statut de suivi d’une fiche reste distinct de son autorisation de connexion. Une adresse devient non modifiable dans la fiche dès la préparation d’un accès ; son changement nécessite un parcours de vérification distinct.
+
+Le [planning et les réservations locales](docs/architecture/planning-reservations-locales.md) ajoutent les séances ponctuelles, les capacités et les annulations avant le début du cours. Les horaires utilisent `Africa/Algiers`. Depuis l’étape suivante, les nouvelles réservations consomment un crédit de forfait ; les anciennes sont conservées sans débit rétroactif. Aucun paiement n’est enregistré.
+
+La [gestion des forfaits et crédits](docs/architecture/forfaits-credits-locaux.md) décrit l’attribution, les dates de validité, les débits et restitutions atomiques, le journal et les limites. Pour continuer une démonstration existante, attribuer un forfait à la cliente dans le CRM avant toute nouvelle réservation. Le seed ne fournit pas automatiquement de forfait.
+
+Le [suivi local des présences](docs/architecture/presences-locales.md) est disponible dans le détail d’une séance terminée : présente, absente ou non renseignée, corrections motivées et historique administratif. Le pointage ne change pas les crédits.
+
+L’[historique des séances et l’assiduité](docs/architecture/historique-assiduite-local.md) sont accessibles depuis la fiche CRM et l’espace cliente. Consultation mensuelle, liste paginée et indicateurs calculés sur tout le mois ; aucune modification des crédits.

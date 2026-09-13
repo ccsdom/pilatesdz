@@ -6,7 +6,8 @@ export class ManagementError extends Error {
 }
 export interface AccountProvisioner {
   create(email: string, name: string, uid?: string): Promise<string>;
-  invitation(email: string): Promise<string>;
+  // Local demo URL, or null when Firebase accepted a private email delivery.
+  invitation(email: string): Promise<string | null>;
 }
 export interface AccessRepository {
   add(actor: Access, member: ClientAccess): Promise<void>;

@@ -10,17 +10,18 @@ import { getClientFirebaseConfig } from "@/config/env.client";
 export function getFirebaseClient() {
   if (typeof window === "undefined") throw new Error("SDK Firebase navigateur uniquement.");
   const config = getClientFirebaseConfig();
-  const existing = getApps().find((app) => app.name === "pilates-local");
-  const app = existing ?? initializeApp({
+  const name = `pilates-${config.mode}`;
+  const existing = getApps().find((app) => app.name === name);
+  const app = existing ?? initializeApp(config.mode === "cloud" ? config : {
     projectId: config.projectId,
     apiKey: "demo-api-key",
     appId: "demo-app-id",
     storageBucket: `${config.projectId}.appspot.com`,
-  }, "pilates-local");
+  }, name);
   const auth = getAuth(app);
   const firestore = getFirestore(app);
   const storage = getStorage(app);
-  if (!existing) {
+  if (!existing && config.mode === "local") {
     connectAuthEmulator(auth, `http://${config.auth.host}:${config.auth.port}`);
     connectFirestoreEmulator(firestore, config.firestore.host, config.firestore.port);
     connectStorageEmulator(storage, config.storage.host, config.storage.port);

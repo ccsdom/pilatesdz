@@ -9,14 +9,15 @@ export function createAccessManagement(accounts: AccountProvisioner, members: Ac
       const uid = await accounts.create(email, name);
       await members.add(actor, { uid, email, name, active: true });
       // A delivery failure leaves a manageable account; the administrator can renew its link.
-      try { return { uid, invitationUrl: await accounts.invitation(email) }; }
-      catch { throw new ManagementError(409, "Le compte est créé, mais son lien n’a pas pu être préparé. Utilisez « Nouveau lien de test » dans la liste."); }
+      try { const invitationUrl = await accounts.invitation(email); return { uid, invitationUrl, emailAccepted: invitationUrl === null }; }
+      catch { throw new ManagementError(409, "Le compte est créé, mais l’invitation n’est pas confirmée. Reprenez depuis la liste après une minute."); }
     },
     async invitation(actor: Access, uid: string) {
       requireAdmin(actor);
       const member = await members.find(actor, uid);
       if (!member.active) throw new AccessError(403);
-      return { invitationUrl: await accounts.invitation(member.email) };
+      const invitationUrl = await accounts.invitation(member.email);
+      return { invitationUrl, emailAccepted: invitationUrl === null };
     },
     async deactivate(actor: Access, uid: string) {
       requireAdmin(actor);

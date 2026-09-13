@@ -3,14 +3,24 @@ import { BrandLockup } from "@/components/brand/brand-lockup";
 import { getPageAccess } from "@/lib/auth/page-access";
 import { AccessErrorView } from "@/features/auth/access-error";
 import { LogoutButton } from "@/features/auth/logout-button";
+import { getPlanningService } from "@/lib/planning/server";
+import { studioDay } from "@/domain/models/planning";
+import { ManagementError } from "@/domain/ports/access-management";
+import { PlanningCalendar } from "@/features/planning/planning-calendar";
+import { getRequestTime } from "@/lib/request-time";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Espace cliente — Pilates Center Alger", robots: { index: false, follow: false } };
 
-export default async function Page() {
+export default async function Page({ searchParams }: { searchParams: Promise<{ day?: string; after?: string }> }) {
   const result = await getPageAccess(["client"]);
   if (!result.access) return <AccessErrorView message={result.error} />;
-  return <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-center gap-8 px-6"><BrandLockup /><h1 className="font-serif text-5xl">Votre espace</h1><p>Vous êtes connectée. Les réservations et le suivi de vos séances seront disponibles prochainement.</p><LogoutButton /><Link href="/" className="underline">Retour au studio</Link></main>;
+  const params = await searchParams;
+  const now = getRequestTime();
+  let page;
+  try { page = await getPlanningService().list(result.access, typeof params.day === "string" ? params.day : studioDay(now), typeof params.after === "string" ? params.after : undefined); }
+  catch (error) { return <AccessErrorView message={error instanceof ManagementError ? error.message : "Planning temporairement indisponible."} />; }
+  return <main className="mx-auto min-h-screen max-w-6xl space-y-8 px-5 py-8 sm:px-8"><header className="flex flex-wrap items-center justify-between gap-5"><BrandLockup /><LogoutButton /></header><div className="space-y-3"><h1 className="font-serif text-4xl sm:text-5xl">Votre espace</h1><p>Choisissez votre séance et réservez votre place.</p><p className="text-sm text-muted-foreground">Un crédit par réservation, restitué en cas d’annulation avant le cours. Le forfait doit être valable à la date de la séance.</p></div><Link href="/espace-cliente/forfaits" className="inline-block rounded-xl bg-[#b7893b] px-5 py-3 text-sm font-medium">Mes forfaits et crédits</Link><Link href="/espace-cliente/historique" className="inline-block rounded-xl border px-5 py-3 text-sm">Mes séances et mon assiduité</Link><PlanningCalendar page={page} admin={false} now={now} /><Link href="/" className="block text-sm underline">Retour au studio</Link></main>;
 }

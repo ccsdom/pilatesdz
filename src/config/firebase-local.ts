@@ -1,5 +1,4 @@
-// Pure validation shared by the SDK adapters and unit tests. Cloud access is
-// deliberately unavailable until hosting and authentication are approved.
+// Pure validation of the isolated demo environment. Cloud uses a separate validator.
 export const DEMO_PROJECT_ID = "demo-pilates-center-alger";
 
 export function validateLocalFirebase(input: {

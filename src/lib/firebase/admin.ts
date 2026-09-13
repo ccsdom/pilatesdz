@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getApps, initializeApp } from "firebase-admin/app";
+import { applicationDefault, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
@@ -10,11 +10,12 @@ import { getServerFirebaseConfig } from "@/config/env.server";
 // Admin bypasses security rules; this initializer grants no user permission.
 export function getFirebaseAdmin() {
   const config = getServerFirebaseConfig();
-  // This adapter is emulator-only: do not probe a GCP metadata server.
-  process.env.METADATA_SERVER_DETECTION = "none";
-  const app = getApps().find((app) => app.name === "pilates-local") ?? initializeApp({
+  if (config.mode === "local") process.env.METADATA_SERVER_DETECTION = "none";
+  const name = `pilates-${config.mode}`;
+  const app = getApps().find((app) => app.name === name) ?? initializeApp({
     projectId: config.projectId,
-    storageBucket: `${config.projectId}.appspot.com`,
-  }, "pilates-local");
+    storageBucket: `${config.projectId}.${config.mode === "local" ? "appspot.com" : "firebasestorage.app"}`,
+    ...(config.mode === "cloud" ? { credential: applicationDefault() } : {}),
+  }, name);
   return { auth: getAuth(app), firestore: getFirestore(app), storage: getStorage(app) };
 }

@@ -5,7 +5,7 @@ import { firestoreMemberships } from "@/repositories/firestore/memberships";
 import { createAuthService } from "@/services/auth-service";
 import { AccessError } from "@/domain/models/access";
 
-export const SESSION_COOKIE = "pilates_session";
+export const SESSION_COOKIE = process.env.FIREBASE_USE_EMULATORS === "false" ? "pilates_cloud_session" : "pilates_session";
 
 function invalidCredential(error: unknown): never {
   const code = (error as { code?: string })?.code;
