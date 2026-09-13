@@ -1,12 +1,53 @@
 import "server-only";
-import type { Firestore } from "firebase-admin/firestore";
+import { FieldPath, type Firestore } from "firebase-admin/firestore";
+import { z } from "zod";
+import { clientIdSchema } from "@/domain/models/client";
+import { subscriptionInputSchema } from "@/domain/models/subscription";
+import { packageInputSchema } from "@/domain/models/package";
 import { AccessError } from "@/domain/models/access";
 import { studioDay } from "@/domain/models/planning";
 import { ManagementError } from "@/domain/ports/access-management";
 import type { SubscriptionRepository, SubscriptionRecord } from "@/domain/ports/subscriptions";
 
+const storedSubscription = subscriptionInputSchema.extend({
+  id: clientIdSchema, clientId: clientIdSchema, centerId: z.string(), assignedAt: z.number().int().nonnegative().safe(),
+  amountDzd: z.number().int().nonnegative().safe(), currency: z.literal("DZD"), pricingVersion: z.literal("2026-09-12"),
+  periods: z.array(packageInputSchema).min(1).max(3),
+}).strip().superRefine((record, ctx) => {
+  if (record.periods.length !== (record.term === "quarterly" ? 3 : 1)
+    || record.periods.some((period, index) => index > 0 && period.validFrom !== record.periods[index - 1].expiresAt)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid subscription periods" });
+  }
+});
+
 export function subscriptionsRepository(db: Firestore, now = Date.now): SubscriptionRepository {
   return {
+    async list(actor, requestedClientId, after) {
+      return db.runTransaction(async tx => {
+        if (!/^[a-z0-9-]+$/.test(actor.centerId)) throw new AccessError(403);
+        const root = `centers/${actor.centerId}`;
+        const member = (await tx.get(db.doc(`${root}/members/${actor.uid}`))).data();
+        if (!member || member.uid !== actor.uid || member.centerId !== actor.centerId || member.active !== true || member.role !== actor.role) throw new AccessError(403);
+        if (actor.role === "client" && requestedClientId !== undefined) throw new AccessError(403);
+        const clientId = actor.role === "admin" ? requestedClientId : member.clientId;
+        if (typeof clientId !== "string" || !clientIdSchema.safeParse(clientId).success) throw new ManagementError(400, "Fiche cliente requise.");
+        const profile = db.doc(`${root}/clients/${clientId}`);
+        const client = (await tx.get(profile)).data();
+        if (!client || client.id !== clientId || client.centerId !== actor.centerId) throw new ManagementError(404, "Cliente introuvable.");
+        if (actor.role === "client" && client.authUid !== actor.uid) throw new AccessError(403);
+        // Matching directions use the automatic descending single-field index.
+        let query = profile.collection("subscriptions").orderBy("assignedAt", "desc").orderBy(FieldPath.documentId(), "desc").limit(21);
+        if (after) { const split = after.indexOf("_"); query = query.startAfter(Number(after.slice(0, split)), after.slice(split + 1)); }
+        const snapshot = await tx.get(query);
+        const subscriptions = snapshot.docs.slice(0, 20).map(doc => {
+          const record = storedSubscription.parse(doc.data());
+          if (record.id !== doc.id || record.centerId !== actor.centerId || record.clientId !== clientId) throw new Error("Invalid subscription identity");
+          return record;
+        });
+        const last = subscriptions.at(-1);
+        return { subscriptions, next: snapshot.size > 20 && last ? `${last.assignedAt}_${last.id}` : null };
+      });
+    },
     async assign(actor, clientId, requestId, plan) {
       return db.runTransaction(async tx => {
         if (actor.role !== "admin" || !/^[a-z0-9-]+$/.test(actor.centerId)

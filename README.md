@@ -1,6 +1,6 @@
 # Pilates Center Alger
 
-Fondation Next.js App Router, React, TypeScript strict et Tailwind CSS. L’authentification, les accès, l’annuaire des clientes, le planning, les réservations et les forfaits fonctionnent avec les émulateurs Firebase locaux. L’identité visuelle est conservée ; les paiements restent à développer.
+Fondation Next.js App Router, React, TypeScript strict et Tailwind CSS. L’authentification, les accès, l’annuaire des clientes, le planning, les réservations et les forfaits fonctionnent avec les émulateurs Firebase locaux. L’identité visuelle est conservée ; les encaissements en espèces peuvent être consignés par abonnement, avec acomptes et solde. Les paiements en ligne restent hors périmètre.
 
 ## Démarrage local
 
@@ -14,20 +14,21 @@ pnpm dev
 Ouvrir http://127.0.0.1:3000. Les commandes serveur écoutent uniquement sur la machine locale. Aucun compte Firebase ni fichier `.env.local` n'est nécessaire pour afficher les pages.
 
 - `/` : maquette publique, identité visuelle conservée.
-- `/crm` : aperçu des clientes et du planning enregistrés, avec finances fictives, réservé aux administratrices du centre.
+- `/crm` : indicateurs réels du jour, aperçu des clientes et du planning, réservé aux administratrices du centre.
 - `/espace-cliente` : planning quotidien, réservation et annulation de sa propre place.
 - `/crm/planning`, `/crm/planning/nouvelle` et `/crm/planning/{id}` : planning quotidien, création des séances, participantes et annulations.
 - `/connexion` : connexion e-mail/mot de passe, fonctionnelle avec les émulateurs locaux.
 - `/crm/acces` : invitations et désactivation des accès clientes, réservé aux administratrices.
 - `/crm/clientes` : fiches clientes du centre, recherche et pagination.
 - `/crm/clientes/nouvelle` et `/crm/clientes/{id}` : création, modification et invitation depuis une fiche.
-- `/crm/forfaits` et `/crm/clientes/{id}/forfaits` : attribution et suivi des crédits.
-- `/espace-cliente/forfaits` : soldes et validité des forfaits personnels.
+- `/crm/forfaits` et `/crm/clientes/{id}/forfaits` : attribution et suivi des crédits, accès aux encaissements des abonnements.
+- `/crm/clientes/{id}/abonnements/{subscriptionId}/paiements` : journal des espèces reçues, acomptes, solde et annulation tracée des saisies erronées.
+- `/espace-cliente/forfaits` : abonnements personnels (formules, tarifs enregistrés, périodes), soldes et validité des crédits. Le même récapitulatif est disponible dans la fiche CRM de chaque cliente.
 - `/connexion/mot-de-passe` : récupération et choix du mot de passe.
 
 Pour tester la connexion, lancer `pnpm emulators` dans un terminal, puis `pnpm seed:local` dans un second. Les deux comptes fictifs sont enregistrés dans `.firebase/demo-accounts.json`, ignoré par Git. Lancer ensuite `pnpm dev:local` et ouvrir http://127.0.0.1:3100. Ce parcours fournit explicitement les paramètres locaux sans créer de `.env.local`. Chaque exécution du seed renouvelle les mots de passe des deux comptes de démonstration. Aucun compte réel ni e-mail d'invitation n'est créé ou envoyé.
 
-Le sélecteur de maquettes a été retiré de l'accueil. Le CRM relie les rubriques Clientes et Planning à Firestore. Les forfaits sont maintenant enregistrés avec leurs crédits ; les finances restent des éléments de démonstration.
+Le sélecteur de maquettes a été retiré de l'accueil. Le CRM relie les rubriques Clientes et Planning à Firestore. Les forfaits sont enregistrés avec leurs crédits. Le tableau de bord résume toutes les séances de la journée à Alger ; aucun chiffre financier fictif n’est affiché.
 
 Pour relier les anciens comptes de démonstration à leurs fiches sans changer leurs mots de passe, exécuter `pnpm sync:local`. Le script est relançable et conserve les désactivations. `pnpm seed:local` assure aussi cette association lors de l’initialisation, mais renouvelle toujours les mots de passe des comptes réservés.
 

@@ -8,6 +8,11 @@ export function createPlanningService(repository: PlanningRepository) {
   function id(value: string) { if (!clientIdSchema.safeParse(value).success) throw new ManagementError(400, "Identifiant invalide."); return value; }
   function admin(actor: Access) { if (actor.role !== "admin") throw new AccessError(403); }
   return {
+    daySessions(actor: Access, day: string) {
+      admin(actor);
+      try { dayRange(day); } catch { throw new ManagementError(400, "Date du planning invalide."); }
+      return repository.daySessions(actor, day);
+    },
     create(actor: Access, requestId: string, value: unknown) {
       admin(actor); id(requestId);
       const parsed = sessionInputSchema.safeParse(value);

@@ -51,6 +51,17 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
     };
   }
   return {
+    async daySessions(actor, day) {
+      return db.runTransaction(async tx => {
+        await identity(tx, actor, true);
+        const range = dayRange(day);
+        const snapshot = await tx.get(db.collection(`${root(actor)}/sessions`)
+          .where("startsAt", ">=", range.start).where("startsAt", "<", range.end)
+          .orderBy("startsAt").orderBy(FieldPath.documentId()).limit(501));
+        if (snapshot.size > 500) throw new ManagementError(409, "Le tableau de bord ne peut pas résumer plus de 500 séances par jour. Consultez le planning.");
+        return snapshot.docs.map(doc => decode(actor, doc.id, doc.data()));
+      });
+    },
     async create(actor, id, input) {
       return db.runTransaction(async (tx) => {
         await identity(tx, actor, true);

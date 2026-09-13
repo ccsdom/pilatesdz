@@ -47,6 +47,29 @@ beforeAll(async () => {
 afterAll(async () => { if (app) await deleteApp(app); });
 
 function clientHistory(query: string, cookie = cookies.admin) { return fetch(origin + "/api/historique?" + query, { headers: { Cookie: cookie } }); }
+it("renders real whole-day CRM metrics beyond the planning preview and excludes cancelled courses", async () => {
+  const startsAt = parseStudioDateTime(`${studioDay()}T12:00`);
+  const batch = getFirestore(app).batch();
+  for (let i = 0; i < 55; i++) {
+    const id = `dashboard-${i}`;
+    batch.set(getFirestore(app).doc(`centers/alger/sessions/${id}`), { ...data, id, centerId: "alger", startsAt, capacity: 4, bookedCount: i < 50 ? 2 : 4, status: i < 50 ? "scheduled" : "cancelled" });
+  }
+  batch.set(getFirestore(app).doc("centers/oran/sessions/dashboard-foreign"), { ...data, id: "dashboard-foreign", centerId: "oran", startsAt, capacity: 4, bookedCount: 4, status: "scheduled" });
+  await batch.commit();
+  const response = await fetch(origin + "/crm", { headers: { Cookie: cookies.admin } });
+  expect(response.status).toBe(200);
+  const html = await response.text();
+  expect(html).toMatch(/data-testid="dashboard-sessions"[^>]*>50</);
+  expect(html).toMatch(/data-testid="dashboard-bookings"[^>]*>100</);
+  expect(html).toMatch(/data-testid="dashboard-available"[^>]*>100</);
+  expect(html).toMatch(/data-testid="dashboard-occupancy"[^>]*>50 %</);
+  expect(html).not.toContain("286 500");
+  expect(html).not.toContain("+12,4%");
+  const denied = await (await fetch(origin + "/crm", { headers: { Cookie: cookies.sub } })).text();
+  expect(denied).toContain("Accès non autorisé");
+  expect(denied).not.toContain("dashboard-bookings");
+});
+
 it("isolates customer history and rejects unauthorized or malformed requests", async () => {
   expect((await clientHistory("month=2020-02", "")).status).toBe(401);
   expect((await clientHistory("month=2020-02&clientId=planning-it-b", cookies.a)).status).toBe(403);
@@ -453,4 +476,160 @@ it("consumes only the monthly period covering the session and refunds the same p
   expect(await remaining()).toEqual([0, 3, 4]);
   expect((await post({ action: "cancel-booking", id: sessions[0].id }, cookies.sub)).status).toBe(200);
   expect(await remaining()).toEqual([1, 3, 4]);
+});
+
+const subscriptions = (query: string, cookie = cookies.admin) => fetch(origin + "/api/abonnements" + query, { headers: { Cookie: cookie } });
+it("protects subscription history and returns only public stored conditions", async () => {
+  expect((await subscriptions("", "")).status).toBe(401);
+  expect((await subscriptions("?clientId=planning-it-subrace", cookies.sub)).status).toBe(403);
+  expect((await subscriptions("?after=bad", cookies.sub)).status).toBe(400);
+  expect((await subscriptions("?clientId=missing")).status).toBe(404);
+  const response = await subscriptions("", cookies.sub);
+  expect(response.status).toBe(200); expect(response.headers.get("cache-control")).toBe("no-store");
+  const page = await response.json();
+  expect(page.subscriptions).toHaveLength(1);
+  expect(page.subscriptions[0]).toMatchObject({ clientId: "planning-it-sub", amountDzd: 28800 });
+  expect(page.subscriptions[0]).not.toHaveProperty("assignedBy");
+  expect(page.subscriptions[0]).not.toHaveProperty("paymentRecorded");
+  const member = getFirestore(app).doc("centers/alger/members/planning-it-sub");
+  try {
+    await member.update({ clientId: "planning-it-subrace" });
+    expect((await subscriptions("", cookies.sub)).status).toBe(403);
+    await member.update({ clientId: "planning-it-sub", active: false });
+    expect((await subscriptions("", cookies.sub)).status).toBe(403);
+  } finally { await member.update({ clientId: "planning-it-sub", active: true }); }
+});
+it("paginates equal-timestamp subscriptions without duplicates and preserves recorded prices", async () => {
+  const collection = getFirestore(app).collection("centers/alger/clients/planning-it-subrace/subscriptions");
+  const stored = (await collection.get()).docs[0].data();
+  const batch = getFirestore(app).batch();
+  for (let i = 0; i < 22; i++) {
+    const id = `history-${String(i).padStart(2, "0")}`;
+    batch.set(collection.doc(id), { ...stored, id, assignedAt: stored.assignedAt + 1, amountDzd: 12345 });
+  }
+  await batch.commit();
+  const first = await (await subscriptions("?clientId=planning-it-subrace")).json();
+  expect(first.subscriptions).toHaveLength(20); expect(first.next).toBeTruthy();
+  expect(first.subscriptions[0].amountDzd).toBe(12345);
+  const second = await (await subscriptions("?" + new URLSearchParams({ clientId: "planning-it-subrace", after: first.next }))).json();
+  expect(second.subscriptions).toHaveLength(3); expect(second.next).toBeNull();
+  const ids = [...first.subscriptions, ...second.subscriptions].map((s: { id: string }) => s.id);
+  expect(new Set(ids).size).toBe(23);
+  const html = await (await fetch(origin + "/espace-cliente/forfaits", { headers: { Cookie: cookies.subrace } })).text();
+  expect(html).toContain("Abonnements attribués");
+  expect(html).toContain("Abonnements plus anciens");
+});
+
+async function paymentSubscriptionId() {
+  return (await (await subscriptions("?clientId=planning-it-sub")).json()).subscriptions[0].id as string;
+}
+function cash(subscriptionId: string, payment: object, requestId: string = randomUUID(), cookie = cookies.admin, requestOrigin = origin) {
+  return fetch(origin + "/api/encaissements", { method: "POST", headers: { Cookie: cookie, Origin: requestOrigin, "Content-Type": "application/json" }, body: JSON.stringify({ clientId: "planning-it-sub", subscriptionId, requestId, payment }) });
+}
+function cashJournal(subscriptionId: string, after?: string, cookie = cookies.admin) {
+  return fetch(origin + "/api/encaissements?" + new URLSearchParams({ clientId: "planning-it-sub", subscriptionId, ...(after ? { after } : {}) }), { headers: { Cookie: cookie } });
+}
+it("restricts cash journals and rejects forged amounts, methods and dates", async () => {
+  const id = await paymentSubscriptionId();
+  const payment = { amountMinor: 500000, receivedDate: studioDay(), method: "cash" };
+  expect((await cashJournal(id, undefined, "")).status).toBe(401);
+  expect((await cashJournal(id, undefined, cookies.sub)).status).toBe(403);
+  expect((await cash(id, payment, randomUUID(), cookies.sub)).status).toBe(403);
+  expect((await cash(id, payment, randomUUID(), cookies.admin, "http://evil.invalid")).status).toBe(403);
+  for (const change of [{ amountMinor: 0 }, { amountMinor: -1 }, { amountMinor: 1.5 }, { method: "transfer" }, { receivedDate: "2026-02-30" }, { receivedDate: "2020-01-01" }, { receivedDate: studioDay(Date.now() + 86400000) }, { paidMinor: 0 }]) {
+    expect((await cash(id, { ...payment, ...change })).status).toBe(400);
+  }
+  expect((await cashJournal(randomUUID())).status).toBe(404);
+  expect((await cashJournal(id, "bad")).status).toBe(400);
+  const journal = await (await cashJournal(id)).json();
+  expect(journal).toMatchObject({ paidMinor: 0, totalMinor: 2880000, payments: [] });
+});
+it("records a cash deposit once and preserves credits and the private audit author", async () => {
+  const id = await paymentSubscriptionId();
+  const credits = await balance("sub");
+  const payment = { amountMinor: 500000, receivedDate: studioDay(), method: "cash" };
+  const requestId = randomUUID();
+  const responses = await Promise.all([cash(id, payment, requestId), cash(id, payment, requestId)]);
+  expect(responses.map(r => r.status)).toEqual([201, 201]);
+  const first = await responses[0].json(); expect(await responses[1].json()).toEqual(first);
+  expect((await cash(id, { ...payment, amountMinor: 1 }, requestId)).status).toBe(409);
+  const response = await cashJournal(id); expect(response.headers.get("cache-control")).toBe("no-store");
+  const journal = await response.json();
+  expect(journal.paidMinor).toBe(500000); expect(journal.payments).toHaveLength(1);
+  expect(journal.payments[0]).not.toHaveProperty("recordedBy");
+  const stored = await getFirestore(app).doc(`centers/alger/clients/planning-it-sub/subscriptions/${id}/payments/${requestId}`).get();
+  expect(stored.data()?.recordedBy).toBe("planning-it-admin");
+  expect(await balance("sub")).toBe(credits);
+  const html = await (await fetch(origin + `/crm/clientes/planning-it-sub/abonnements/${id}/paiements`, { headers: { Cookie: cookies.admin } })).text();
+  expect(html).toContain("Journal des encaissements"); expect(html).toContain("Montant reçu en DA");
+});
+it("paginates cash history and serializes competing final payments without overpayment", async () => {
+  const id = await paymentSubscriptionId();
+  const payment = { amountMinor: 1, receivedDate: studioDay(), method: "cash" };
+  for (let i = 0; i < 21; i++) expect((await cash(id, payment)).status).toBe(201);
+  const first = await (await cashJournal(id)).json();
+  expect(first.payments).toHaveLength(20); expect(first.paidMinor).toBe(500021);
+  const second = await (await cashJournal(id, first.next)).json();
+  expect(second.payments).toHaveLength(2); expect(second.next).toBeNull();
+  expect(new Set([...first.payments, ...second.payments].map((p: { id: string }) => p.id)).size).toBe(22);
+  const finalPayment = { ...payment, amountMinor: first.totalMinor - first.paidMinor };
+  const responses = await Promise.all([cash(id, finalPayment), cash(id, finalPayment)]);
+  expect(responses.map(r => r.status).sort()).toEqual([201, 409]);
+  const journal = await (await cashJournal(id)).json(); expect(journal.paidMinor).toBe(journal.totalMinor);
+  expect((await cash(id, payment)).status).toBe(409);
+});
+
+function correctCash(subscriptionId: string, correction: object, requestId = randomUUID(), cookie = cookies.admin, requestOrigin = origin) {
+  return fetch(origin + "/api/encaissements/corrections", { method: "POST", headers: { Cookie: cookie, Origin: requestOrigin, "Content-Type": "application/json" }, body: JSON.stringify({ clientId: "planning-it-sub", subscriptionId, requestId, correction }) });
+}
+it("validates correction authorization and the mandatory reason", async () => {
+  const id = await paymentSubscriptionId();
+  const correction = { paymentId: randomUUID(), reason: "Erreur de saisie" };
+  expect((await correctCash(id, correction, randomUUID(), "")).status).toBe(401);
+  expect((await correctCash(id, correction, randomUUID(), cookies.sub)).status).toBe(403);
+  expect((await correctCash(id, correction, randomUUID(), cookies.admin, "http://evil.invalid")).status).toBe(403);
+  expect((await correctCash(id, correction)).status).toBe(404);
+  for (const change of [{ reason: " " }, { reason: "x".repeat(301) }, { paymentId: "../other" }, { amountMinor: -1 }]) {
+    expect((await correctCash(id, { ...correction, ...change })).status).toBe(400);
+  }
+});
+it("corrects a cash entry once, retains the audit and never revives it on replay", async () => {
+  const id = await paymentSubscriptionId();
+  const collection = getFirestore(app).collection(`centers/alger/clients/planning-it-sub/subscriptions/${id}/payments`);
+  const originalDoc = (await collection.get()).docs.find(doc => doc.data().amountMinor === 500000)!;
+  const original = originalDoc.data();
+  const credits = await balance("sub");
+  const correction = { paymentId: originalDoc.id, reason: "Montant saisi deux fois par erreur" };
+  const requestId = randomUUID();
+  const responses = await Promise.all([correctCash(id, correction, requestId), correctCash(id, correction, requestId)]);
+  expect(responses.map(r => r.status)).toEqual([201, 201]);
+  const result = await responses[0].json(); expect(await responses[1].json()).toEqual(result);
+  expect(result.correction.amountMinor).toBe(-500000); expect(result.correction).not.toHaveProperty("recordedBy");
+  expect((await correctCash(id, { ...correction, reason: "Un autre motif" }, requestId)).status).toBe(409);
+  expect((await correctCash(id, correction)).status).toBe(409);
+  const corrected = (await originalDoc.ref.get()).data()!;
+  for (const key of ["amountMinor", "receivedDate", "recordedAt", "recordedBy"]) expect(corrected[key]).toEqual(original[key]);
+  const audit = (await getFirestore(app).doc(`centers/alger/clients/planning-it-sub/subscriptions/${id}/paymentCorrections/${requestId}`).get()).data();
+  expect(audit).toMatchObject({ recordedBy: "planning-it-admin", amountMinor: -500000, paymentId: originalDoc.id });
+  expect((await (await cashJournal(id)).json()).paidMinor).toBe(2380000);
+  const replay = await cash(id, { amountMinor: original.amountMinor, receivedDate: original.receivedDate, method: "cash" }, originalDoc.id);
+  expect(replay.status).toBe(201); expect((await replay.json()).payment.correction.id).toBe(requestId);
+  expect((await (await cashJournal(id)).json()).paidMinor).toBe(2380000);
+  expect(await balance("sub")).toBe(credits);
+  const page = await (await fetch(origin + `/crm/clientes/planning-it-sub/abonnements/${id}/paiements`, { headers: { Cookie: cookies.admin } })).text();
+  expect(page).toContain("Corriger une erreur de saisie");
+  const journal = await (await cashJournal(id)).json();
+  const older = await (await fetch(origin + `/crm/clientes/planning-it-sub/abonnements/${id}/paiements?` + new URLSearchParams({ after: journal.next }), { headers: { Cookie: cookies.admin } })).text();
+  expect(older).toContain("Saisie annulée"); expect(older).toContain(correction.reason);
+  expect(corrected.correction).toMatchObject({ id: requestId, reason: correction.reason });
+  expect((await cash(id, { amountMinor: 500000, receivedDate: studioDay(), method: "cash" })).status).toBe(201);
+});
+it("allows only one of two distinct concurrent corrections for the same entry", async () => {
+  const id = await paymentSubscriptionId();
+  const docs = await getFirestore(app).collection(`centers/alger/clients/planning-it-sub/subscriptions/${id}/payments`).get();
+  const target = docs.docs.find(doc => doc.data().amountMinor === 1)!;
+  const correction = { paymentId: target.id, reason: "Encaissement de test saisi par erreur" };
+  const responses = await Promise.all([correctCash(id, correction), correctCash(id, correction)]);
+  expect(responses.map(r => r.status).sort()).toEqual([201, 409]);
+  expect((await (await cashJournal(id)).json()).paidMinor).toBe(2879999);
 });

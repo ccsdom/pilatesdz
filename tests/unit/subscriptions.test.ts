@@ -29,11 +29,24 @@ it.each(["2027-02-30", "2027-13-01", "bad", "2027-01-01T12:00"])("rejects invali
   expect(() => planSubscription({ ...input, purchaseDate })).toThrow();
 });
 it("rejects clients, forged prices and traversal before persistence", () => {
-  const repository = { assign: vi.fn() }; const service = createSubscriptionService(repository);
+  const repository = { assign: vi.fn(), list: vi.fn() }; const service = createSubscriptionService(repository);
   const actor = { uid: "admin", centerId: "alger", role: "admin" as const };
   const id = "e15f3c91-434a-4e9c-8056-31a530742a52";
   expect(() => service.assign({ ...actor, role: "client" }, "c", id, input)).toThrow();
   expect(() => service.assign(actor, "../other", id, input)).toThrow();
   expect(() => service.assign(actor, "c", id, { ...input, amountDzd: 1 })).toThrow();
   expect(repository.assign).not.toHaveBeenCalled();
+});
+
+it("restricts subscription history to the linked customer and validates pagination", () => {
+  const repository = { assign: vi.fn(), list: vi.fn() };
+  const service = createSubscriptionService(repository);
+  const actor = { uid: "client", centerId: "alger", role: "client" as const };
+  expect(() => service.list(actor, "other")).toThrow();
+  expect(() => service.list(actor, "")).toThrow();
+  expect(() => service.list(actor, undefined, "bad")).toThrow();
+  expect(() => service.list({ ...actor, role: "admin" }, "../other")).toThrow();
+  expect(repository.list).not.toHaveBeenCalled();
+  service.list(actor, undefined, "123_abc");
+  expect(repository.list).toHaveBeenCalledWith(actor, undefined, "123_abc");
 });

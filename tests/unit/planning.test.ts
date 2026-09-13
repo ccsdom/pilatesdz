@@ -13,7 +13,7 @@ it("enforces new course limits while preserving historical sessions", () => {
   expect(sessionInputSchema.safeParse(legacy).success).toBe(false);
 });
 function setup() {
-  const repository = { create: vi.fn(), list: vi.fn(), get: vi.fn(), book: vi.fn(), cancelBooking: vi.fn(), cancelSession: vi.fn() };
+  const repository = { create: vi.fn(), list: vi.fn(), daySessions: vi.fn(), get: vi.fn(), book: vi.fn(), cancelBooking: vi.fn(), cancelSession: vi.fn() };
   return { repository, service: createPlanningService(repository) };
 }
 it("interprets studio input independently of the computer's time zone", () => {
@@ -48,4 +48,13 @@ it("validates page cursors and traversal", () => {
   expect(() => service.list(admin, "not-a-day")).toThrow();
   expect(() => service.list(admin, "2030-01-12", "../other")).toThrow();
   expect(() => service.get(client, "../other")).toThrow();
+});
+
+it("restricts the complete day dashboard to administrators", () => {
+  const { repository, service } = setup();
+  expect(() => service.daySessions(client, "2030-01-12")).toThrow();
+  expect(() => service.daySessions(admin, "bad")).toThrow();
+  expect(repository.daySessions).not.toHaveBeenCalled();
+  service.daySessions(admin, "2030-01-12");
+  expect(repository.daySessions).toHaveBeenCalledWith(admin, "2030-01-12");
 });

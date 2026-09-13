@@ -49,7 +49,7 @@ it("redirects anonymous private pages and returns 401 from the API", async () =>
   for (const path of ["/crm", "/espace-cliente"]) {
     const response = await fetch(origin + path, { redirect: "manual" });
     expect(response.status).toBe(307); expect(response.headers.get("location")).toBe("/connexion");
-    expect(await response.text()).not.toContain("286 500 DA");
+    expect(await response.text()).not.toContain("Taux de remplissage");
   }
   expect((await me()).status).toBe(401);
   expect((await me("pilates_session=forged")).status).toBe(401);
@@ -66,11 +66,11 @@ it("routes clients correctly and never leaks CRM data to them", async () => {
   const response = await me(cookie); expect(response.status).toBe(200);
   expect(await response.json()).toEqual({ uid: "it-client", centerId: "alger", role: "client" });
   const html = await (await fetch(origin + "/crm", { headers: { Cookie: cookie } })).text();
-  expect(html).toContain("Accès non autorisé"); expect(html).not.toContain("286 500 DA");
+  expect(html).toContain("Accès non autorisé"); expect(html).not.toContain("Taux de remplissage");
 });
-it("allows the center administrator into the demonstration CRM", async () => {
+it("allows the center administrator into the live CRM", async () => {
   const { cookie, destination } = await login("it-admin"); expect(destination).toBe("/crm");
-  expect(await (await fetch(origin + "/crm", { headers: { Cookie: cookie } })).text()).toContain("286 500 DA");
+  expect(await (await fetch(origin + "/crm", { headers: { Cookie: cookie } })).text()).toContain("Taux de remplissage");
 });
 it("rejects a user belonging only to another center", async () => {
   expect((await post("/api/auth/session", { idToken: await idToken("it-other") })).status).toBe(403);
@@ -96,7 +96,7 @@ it("rechecks a changed role before rendering CRM data", async () => {
   const member = getFirestore(app).doc("centers/alger/members/it-admin");
   await member.update({ role: "client" });
   const html = await (await fetch(origin + "/crm", { headers: { Cookie: cookie } })).text();
-  expect(html).toContain("Accès non autorisé"); expect(html).not.toContain("286 500 DA");
+  expect(html).toContain("Accès non autorisé"); expect(html).not.toContain("Taux de remplissage");
   await member.update({ role: "admin" });
 });
 it("rejects an existing session when the Firebase account is disabled", async () => {
