@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { clientIdSchema } from "./client";
+import type { PilatesSession } from "./planning";
+export type PendingAttendanceReport = { from: string; to: string; pending: number; sessions: { session: PilatesSession; pending: number; total: number }[] };
 export const attendanceStatusSchema = z.enum(["unmarked", "present", "absent"]);
 export type AttendanceStatus = z.infer<typeof attendanceStatusSchema>;
 export const attendanceLabels: Record<AttendanceStatus, string> = { unmarked: "Non renseignée", present: "Présente", absent: "Absente" };

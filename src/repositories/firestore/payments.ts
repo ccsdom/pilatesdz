@@ -10,7 +10,7 @@ import { ManagementError } from "@/domain/ports/access-management";
 import type { PaymentRepository } from "@/domain/ports/payments";
 
 const correctionSchema = paymentCorrectionSchema.extend({ id: z.string().uuid(), recordedAt: z.number().int().nonnegative().safe(), amountMinor: z.number().int().negative().safe() }).strip();
-const paymentSchema = paymentInputSchema.extend({ id: z.string().uuid(), recordedAt: z.number().int().nonnegative().safe(),
+export const paymentSchema = paymentInputSchema.extend({ id: z.string().uuid(), recordedAt: z.number().int().nonnegative().safe(),
   correction: z.object({ id: z.string().uuid(), reason: z.string().min(5).max(300), recordedAt: z.number().int().nonnegative().safe() }).strict().optional(),
 }).strip();
 export function paymentsRepository(db: Firestore, now = Date.now): PaymentRepository {

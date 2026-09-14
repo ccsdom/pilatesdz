@@ -8,6 +8,14 @@ export function createPlanningService(repository: PlanningRepository) {
   function id(value: string) { if (!clientIdSchema.safeParse(value).success) throw new ManagementError(400, "Identifiant invalide."); return value; }
   function admin(actor: Access) { if (actor.role !== "admin") throw new AccessError(403); }
   return {
+    pendingAttendance(actor: Access, from: string, to: string) {
+      admin(actor);
+      try {
+        const start = dayRange(from).start, end = dayRange(to).end;
+        if (end <= start || end - start > 31 * 86400000) throw new Error("range");
+      } catch { throw new ManagementError(400, "Choisissez une période valide de 31 jours maximum."); }
+      return repository.pendingAttendance(actor, from, to);
+    },
     daySessions(actor: Access, day: string) {
       admin(actor);
       try { dayRange(day); } catch { throw new ManagementError(400, "Date du planning invalide."); }
@@ -28,6 +36,10 @@ export function createPlanningService(repository: PlanningRepository) {
     book(actor: Access, sessionId: string) {
       if (actor.role !== "client") throw new AccessError(403);
       return repository.book(actor, id(sessionId));
+    },
+    bookForClient(actor: Access, sessionId: string, clientId: string) {
+      admin(actor);
+      return repository.book(actor, id(sessionId), id(clientId));
     },
     cancelBooking(actor: Access, sessionId: string, clientId?: string) {
       if (clientId) { admin(actor); id(clientId); }

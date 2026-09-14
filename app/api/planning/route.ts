@@ -12,6 +12,7 @@ export const runtime = "nodejs";
 const input = z.discriminatedUnion("action", [
   z.object({ action: z.literal("create"), requestId: z.string().uuid(), session: sessionInputSchema }).strict(),
   z.object({ action: z.literal("book"), id: clientIdSchema }).strict(),
+  z.object({ action: z.literal("book-client"), id: clientIdSchema, clientId: clientIdSchema }).strict(),
   z.object({ action: z.literal("cancel-booking"), id: clientIdSchema, clientId: clientIdSchema.optional() }).strict(),
   z.object({ action: z.literal("cancel-session"), id: clientIdSchema }).strict(),
 ]);
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
     const service = getPlanningService();
     if (data.action === "create") return json({ session: await service.create(actor, data.requestId, data.session) }, 201);
     if (data.action === "book") await service.book(actor, data.id);
+    if (data.action === "book-client") await service.bookForClient(actor, data.id, data.clientId);
     if (data.action === "cancel-booking") await service.cancelBooking(actor, data.id, data.clientId);
     if (data.action === "cancel-session") await service.cancelSession(actor, data.id);
     return json({ success: true });

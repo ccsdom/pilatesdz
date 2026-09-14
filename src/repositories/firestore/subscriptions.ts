@@ -9,7 +9,7 @@ import { studioDay } from "@/domain/models/planning";
 import { ManagementError } from "@/domain/ports/access-management";
 import type { SubscriptionRepository, SubscriptionRecord } from "@/domain/ports/subscriptions";
 
-const storedSubscription = subscriptionInputSchema.extend({
+export const storedSubscription = subscriptionInputSchema.extend({
   id: clientIdSchema, clientId: clientIdSchema, centerId: z.string(), assignedAt: z.number().int().nonnegative().safe(),
   amountDzd: z.number().int().nonnegative().safe(), currency: z.literal("DZD"), pricingVersion: z.literal("2026-09-12"),
   periods: z.array(packageInputSchema).min(1).max(3),

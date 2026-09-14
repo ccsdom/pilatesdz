@@ -21,6 +21,7 @@ Ouvrir http://127.0.0.1:3000. Les commandes serveur écoutent uniquement sur la 
 - `/crm/acces` : invitations et désactivation des accès clientes, réservé aux administratrices.
 - `/crm/clientes` : fiches clientes du centre, recherche et pagination.
 - `/crm/clientes/nouvelle` et `/crm/clientes/{id}` : création, modification et invitation depuis une fiche.
+- `/crm/encaissements` : récapitulatif mensuel des espèces enregistrées, corrections, export CSV du mois complet et liens vers les journaux des abonnements.
 - `/crm/forfaits` et `/crm/clientes/{id}/forfaits` : attribution et suivi des crédits, accès aux encaissements des abonnements.
 - `/crm/clientes/{id}/abonnements/{subscriptionId}/paiements` : journal des espèces reçues, acomptes, solde et annulation tracée des saisies erronées.
 - `/espace-cliente/forfaits` : abonnements personnels (formules, tarifs enregistrés, périodes), soldes et validité des crédits. Le même récapitulatif est disponible dans la fiche CRM de chaque cliente.
@@ -84,3 +85,11 @@ La [gestion des forfaits et crédits](docs/architecture/forfaits-credits-locaux.
 Le [suivi local des présences](docs/architecture/presences-locales.md) est disponible dans le détail d’une séance terminée : présente, absente ou non renseignée, corrections motivées et historique administratif. Le pointage ne change pas les crédits.
 
 L’[historique des séances et l’assiduité](docs/architecture/historique-assiduite-local.md) sont accessibles depuis la fiche CRM et l’espace cliente. Consultation mensuelle, liste paginée et indicateurs calculés sur tout le mois ; aucune modification des crédits.
+
+L’[inscription depuis le CRM](docs/architecture/inscription-depuis-crm.md) permet à l’accueil de réserver pour une cliente active, même sans accès en ligne, avec contrôle transactionnel des places et des crédits.
+
+Le [suivi des présences à renseigner](docs/architecture/presences-a-renseigner.md) fait ressortir les feuilles incomplètes des sept derniers jours sur le tableau de bord, avec recherche par période et accès direct au pointage.
+
+Le [suivi des forfaits](docs/architecture/suivi-forfaits.md) repère les échéances proches et les crédits faibles, distingue les crédits futurs et permet de parcourir toutes les fiches actives par pages.
+
+Le [suivi des soldes d’abonnements](docs/architecture/soldes-abonnements.md) distingue les acomptes, les absences de saisie et les historiques corrigés, avec accès direct aux journaux d’encaissement.

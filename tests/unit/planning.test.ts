@@ -13,7 +13,7 @@ it("enforces new course limits while preserving historical sessions", () => {
   expect(sessionInputSchema.safeParse(legacy).success).toBe(false);
 });
 function setup() {
-  const repository = { create: vi.fn(), list: vi.fn(), daySessions: vi.fn(), get: vi.fn(), book: vi.fn(), cancelBooking: vi.fn(), cancelSession: vi.fn() };
+  const repository = { create: vi.fn(), list: vi.fn(), daySessions: vi.fn(), pendingAttendance: vi.fn(), get: vi.fn(), book: vi.fn(), cancelBooking: vi.fn(), cancelSession: vi.fn() };
   return { repository, service: createPlanningService(repository) };
 }
 it("interprets studio input independently of the computer's time zone", () => {
@@ -50,6 +50,16 @@ it("validates page cursors and traversal", () => {
   expect(() => service.get(client, "../other")).toThrow();
 });
 
+it("allows only an administrator to book for an explicit valid customer", () => {
+  const { service, repository } = setup();
+  expect(() => service.bookForClient(client, "session", "other")).toThrow();
+  expect(() => service.bookForClient(admin, "session", "../other")).toThrow();
+  expect(() => service.bookForClient(admin, "../session", "other")).toThrow();
+  expect(repository.book).not.toHaveBeenCalled();
+  service.bookForClient(admin, "session", "other");
+  expect(repository.book).toHaveBeenCalledWith(admin, "session", "other");
+});
+
 it("restricts the complete day dashboard to administrators", () => {
   const { repository, service } = setup();
   expect(() => service.daySessions(client, "2030-01-12")).toThrow();
@@ -57,4 +67,15 @@ it("restricts the complete day dashboard to administrators", () => {
   expect(repository.daySessions).not.toHaveBeenCalled();
   service.daySessions(admin, "2030-01-12");
   expect(repository.daySessions).toHaveBeenCalledWith(admin, "2030-01-12");
+});
+
+it("restricts attendance follow-up to administrators and at most 31 valid days", () => {
+  const { service, repository } = setup();
+  expect(() => service.pendingAttendance(client, "2024-02-01", "2024-02-29")).toThrow();
+  for (const [from, to] of [["bad", "2024-02-29"], ["2024-02-30", "2024-03-01"], ["2024-03-02", "2024-03-01"], ["2024-01-01", "2024-02-01"]]) {
+    expect(() => service.pendingAttendance(admin, from, to)).toThrow();
+  }
+  expect(repository.pendingAttendance).not.toHaveBeenCalled();
+  service.pendingAttendance(admin, "2024-01-01", "2024-01-31");
+  expect(repository.pendingAttendance).toHaveBeenCalledWith(admin, "2024-01-01", "2024-01-31");
 });

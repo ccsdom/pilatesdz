@@ -1,5 +1,5 @@
 import "server-only";
-import { readAttendance, type Attendance } from "@/domain/models/attendance";
+import { attendanceOpen, readAttendance, type Attendance } from "@/domain/models/attendance";
 import { FieldPath, type DocumentData, type Firestore, type Transaction } from "firebase-admin/firestore";
 import { AccessError, type Access } from "@/domain/models/access";
 import { clientIdSchema } from "@/domain/models/client";
@@ -51,6 +51,28 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
     };
   }
   return {
+    async pendingAttendance(actor, from, to) {
+      const at = now();
+      return db.runTransaction(async tx => {
+        await identity(tx, actor, true);
+        const snapshot = await tx.get(db.collection(`${root(actor)}/sessions`)
+          .where("startsAt", ">=", dayRange(from).start).where("startsAt", "<", dayRange(to).end)
+          .orderBy("startsAt").orderBy(FieldPath.documentId()).limit(501));
+        if (snapshot.size > 500) throw new ManagementError(409, "Plus de 500 séances sur cette période. Réduisez les dates pour obtenir un suivi complet.");
+        const ended = snapshot.docs.map(doc => decode(actor, doc.id, doc.data())).filter(session => attendanceOpen(session, at));
+        const rows = await Promise.all(ended.map(async session => {
+          const bookings = await tx.get(sessionRef(actor, session.id).collection("bookings").where("status", "==", "confirmed").limit(31));
+          if (bookings.size > session.capacity) throw new Error("Invalid occupancy");
+          const pending = bookings.docs.filter(doc => {
+            bookingStatus(session, doc.id, doc.data());
+            return readAttendance(doc.data().attendance).status === "unmarked";
+          }).length;
+          return { session, pending, total: bookings.size };
+        }));
+        const sessions = rows.filter(row => row.pending > 0);
+        return { from, to, pending: sessions.reduce((sum, row) => sum + row.pending, 0), sessions };
+      });
+    },
     async daySessions(actor, day) {
       return db.runTransaction(async tx => {
         await identity(tx, actor, true);
@@ -114,10 +136,18 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
         return { session, myBooking, attendees };
       });
     },
-    async book(actor, id) {
+    async book(actor, id, targetClientId) {
       await db.runTransaction(async (tx) => {
         const person = await identity(tx, actor);
-        if (actor.role !== "client" || !person.clientId || !person.active) throw new AccessError(403);
+        if (actor.role === "admin") {
+          if (!targetClientId) throw new AccessError(403);
+          const profile = (await tx.get(profileRef(actor, targetClientId))).data();
+          if (!profile) throw new ManagementError(404, "Cliente introuvable dans ce centre.");
+          if (profile.id !== targetClientId || profile.centerId !== actor.centerId) throw new AccessError(403);
+          if (profile.status !== "active") throw new ManagementError(409, "La fiche de cette cliente est inactive.");
+          person.clientId = targetClientId;
+        } else if (targetClientId !== undefined) throw new AccessError(403);
+        if (!person.clientId || !person.active) throw new AccessError(403);
         const ref = sessionRef(actor, id);
         const session = decode(actor, id, (await tx.get(ref)).data());
         future(session);

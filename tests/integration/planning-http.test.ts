@@ -633,3 +633,316 @@ it("allows only one of two distinct concurrent corrections for the same entry", 
   expect(responses.map(r => r.status).sort()).toEqual([201, 409]);
   expect((await (await cashJournal(id)).json()).paidMinor).toBe(2879999);
 });
+
+const reportSubscription = randomUUID();
+function monthlyCash(month: string, after?: string, cookie = cookies.admin) {
+  return fetch(origin + "/api/encaissements/rapport?" + new URLSearchParams({ month, ...(after ? { after } : {}) }), { headers: { Cookie: cookie } });
+}
+it("isolates monthly cash reports and rejects unauthorized or invalid requests", async () => {
+  expect((await monthlyCash("2024-02", undefined, "")).status).toBe(401);
+  expect((await monthlyCash("2024-02", undefined, cookies.sub)).status).toBe(403);
+  expect((await monthlyCash("2024-13")).status).toBe(400);
+  expect((await monthlyCash("2024-02", "../bad")).status).toBe(400);
+  expect((await (await monthlyCash("2023-01")).json()).summary.netMinor).toBe(0);
+  const member = getFirestore(app).doc("centers/alger/members/planning-it-admin");
+  try { await member.update({ active: false }); expect((await monthlyCash("2024-02")).status).toBe(403); }
+  finally { await member.update({ active: true }); }
+});
+it("summarizes the entire receipt month across pages, including later corrections", async () => {
+  const db = getFirestore(app), batch = db.batch();
+  const root = `centers/alger/clients/planning-it-sub/subscriptions/${reportSubscription}`;
+  batch.set(db.doc(root), { id: reportSubscription, clientId: "planning-it-sub", centerId: "alger", amountDzd: 12000, currency: "DZD", purchaseDate: "2024-02-01", paidMinor: 5000 });
+  const base = { clientId: "planning-it-sub", subscriptionId: reportSubscription, centerId: "alger", method: "cash", recordedAt: Date.now(), recordedBy: "private-author", amountMinor: 100 };
+  for (let i = 0; i < 55; i++) {
+    const id = randomUUID();
+    batch.set(db.doc(`${root}/payments/${id}`), { ...base, id, receivedDate: i % 2 ? "2024-02-01" : "2024-02-29", ...(i < 5 ? { correction: { id: randomUUID(), reason: "Private correction note", recordedAt: Date.now() } } : {}) });
+  }
+  for (const receivedDate of ["2024-01-31", "2024-03-01"]) { const id = randomUUID(); batch.set(db.doc(`${root}/payments/${id}`), { ...base, id, receivedDate, amountMinor: 999999 }); }
+  const foreignId = randomUUID();
+  batch.set(db.doc(`centers/oran/clients/foreign/subscriptions/${reportSubscription}/payments/${foreignId}`), { ...base, id: foreignId, clientId: "foreign", centerId: "oran", receivedDate: "2024-02-15", amountMinor: 888888 });
+  await batch.commit();
+  const response = await monthlyCash("2024-02"); expect(response.status).toBe(200); expect(response.headers.get("cache-control")).toBe("no-store");
+  const first = await response.json();
+  expect(first.summary).toEqual({ grossMinor: 5500, correctedMinor: 500, netMinor: 5000, count: 50, correctedCount: 5 });
+  expect(first.entries).toHaveLength(50); expect(first.next).toBeTruthy();
+  const second = await (await monthlyCash("2024-02", first.next)).json();
+  expect(second.entries).toHaveLength(5); expect(second.next).toBeNull(); expect(second.summary).toEqual(first.summary);
+  expect(new Set([...first.entries, ...second.entries].map((e: { id: string }) => e.id)).size).toBe(55);
+  expect(JSON.stringify(first)).not.toContain("private-author"); expect(JSON.stringify(first)).not.toContain("Private correction note");
+  expect(first.entries[0].clientName).toBe("Private client sub");
+  expect((await monthlyCash("2024-03", first.next)).status).toBe(400);
+  const html = await (await fetch(origin + "/crm/encaissements?month=2024-02", { headers: { Cookie: cookies.admin } })).text();
+  expect(html).toContain("Encaissements suivants"); expect(html).toContain("Espèces enregistrées, après corrections");
+});
+it("exports the entire selected month and refuses unauthorized downloads", async () => {
+  const download = (month: string, cookie = cookies.admin) => fetch(origin + "/api/encaissements/export?" + new URLSearchParams({ month }), { headers: { Cookie: cookie } });
+  expect((await download("2024-02", "")).status).toBe(401);
+  expect((await download("2024-02", cookies.sub)).status).toBe(403);
+  expect((await download("bad")).status).toBe(400);
+  const profile = getFirestore(app).doc("centers/alger/clients/planning-it-sub");
+  try {
+    await profile.update({ name: "=1+1" });
+    const response = await download("2024-02"); expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/csv");
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("content-disposition")).toContain("encaissements-alger-2024-02.csv");
+    const csv = await response.text();
+    expect(csv.split("\r\n")).toHaveLength(57);
+    expect(csv).toContain('"\t=1+1"');
+    expect(csv.match(/"Saisie annulée"/g)).toHaveLength(5);
+    expect(csv.match(/"Conservée"/g)).toHaveLength(50);
+    expect(csv).not.toContain("private-author"); expect(csv).not.toContain("Private correction note");
+    expect(csv).not.toContain("9999,99"); expect(csv).not.toContain("8888,88");
+  } finally { await profile.update({ name: "Private client sub" }); }
+  const empty = await (await download("2023-01")).text(); expect(empty.split("\r\n")).toHaveLength(2);
+});
+it("refuses a truncated monthly cash total above the supported bound", async () => {
+  const db = getFirestore(app);
+  for (let start = 0; start < 946; start += 400) {
+    const batch = db.batch();
+    for (let i = start; i < Math.min(start + 400, 946); i++) {
+      const id = randomUUID();
+      batch.set(db.doc(`centers/alger/clients/planning-it-sub/subscriptions/${reportSubscription}/payments/${id}`), { id, centerId: "alger", clientId: "planning-it-sub", subscriptionId: reportSubscription, amountMinor: 1, method: "cash", receivedDate: "2024-02-10", recordedAt: Date.now() });
+    }
+    await batch.commit();
+  }
+  const response = await monthlyCash("2024-02"); expect(response.status).toBe(409);
+  expect((await response.json()).error).toContain("1 000");
+  expect((await fetch(origin + "/api/encaissements/export?month=2024-02", { headers: { Cookie: cookies.admin } })).status).toBe(409);
+});
+
+it("books an uninvited customer from reception once, audits the actor and refunds the same credit", async () => {
+  const db = getFirestore(app), clientId = "planning-it-reception";
+  const profile = db.doc(`centers/alger/clients/${clientId}`);
+  await profile.set({ id: clientId, centerId: "alger", name: "Reception test", email: "reception@pilates.test", phone: "", status: "active", authUid: null, invitationUid: null, version: 1, createdAt: Date.now(), updatedAt: Date.now(), nameKey: "reception test", searchPrefixes: ["reception"] });
+  const session = await create();
+  const input = { action: "book-client", id: session.id, clientId };
+  expect((await post(input)).status).toBe(401);
+  expect((await post(input, cookies.a)).status).toBe(403);
+  expect((await post(input, cookies.admin, "https://evil.test")).status).toBe(403);
+  expect((await post({ ...input, clientId: "../other" }, cookies.admin)).status).toBe(400);
+  expect((await post({ ...input, clientId: "missing-reception" }, cookies.admin)).status).toBe(404);
+  await db.doc("centers/oran/clients/foreign-reception").set({ id: "foreign-reception", centerId: "oran", status: "active" });
+  expect((await post({ ...input, clientId: "foreign-reception" }, cookies.admin)).status).toBe(404);
+  expect((await post(input, cookies.admin)).status).toBe(409);
+  const packageId = randomUUID();
+  expect((await assign("reception", { ...packageInput, credits: 1 }, packageId)).status).toBe(201);
+  await profile.update({ status: "inactive" });
+  expect((await post(input, cookies.admin)).status).toBe(409);
+  await profile.update({ status: "active" });
+  const results = await Promise.all([post(input, cookies.admin), post(input, cookies.admin)]);
+  expect(results.map(r => r.status)).toEqual([200, 200]);
+  expect(await balance("reception")).toBe(0);
+  expect((await (await get(`?id=${session.id}`)).json()).session.bookedCount).toBe(1);
+  const booking = (await db.doc(`centers/alger/sessions/${session.id}/bookings/${clientId}`).get()).data();
+  expect(booking).toMatchObject({ updatedBy: "planning-it-admin", creditPackageId: packageId, creditRevision: 1 });
+  const movements = await profile.collection(`packages/${packageId}/movements`).get();
+  expect(movements.docs.filter(d => d.data().reason === "booking").map(d => d.data().actorUid)).toEqual(["planning-it-admin"]);
+  expect((await post({ action: "cancel-booking", id: session.id, clientId }, cookies.admin)).status).toBe(200);
+  expect(await balance("reception")).toBe(1);
+  const html = await (await fetch(`${origin}/crm/planning/${session.id}/inscrire`, { headers: { Cookie: cookies.admin } })).text();
+  expect(html).toContain("Inscrire une cliente");
+  expect(html).toContain("booking-search");
+  const denied = await (await fetch(`${origin}/crm/planning/${session.id}/inscrire`, { headers: { Cookie: cookies.a } })).text();
+  expect(denied).toContain("Accès non autorisé");
+  expect(denied).not.toContain("booking-search");
+  await db.doc(`centers/alger/sessions/${session.id}`).update({ startsAt: Date.now() - 1000 });
+  expect((await post(input, cookies.admin)).status).toBe(409);
+  expect(await balance("reception")).toBe(1);
+});
+
+it("shares the last seat transaction between reception and online customers", async () => {
+  const session = await create();
+  const before = await Promise.all([balance("a"), balance("b")]);
+  const results = await Promise.all([
+    post({ action: "book-client", id: session.id, clientId: "planning-it-a" }, cookies.admin),
+    post({ action: "book", id: session.id }, cookies.b),
+  ]);
+  expect(results.map(r => r.status).sort()).toEqual([200, 409]);
+  const after = await Promise.all([balance("a"), balance("b")]);
+  expect(after[0] + after[1]).toBe(before[0] + before[1] - 1);
+  expect((await (await get(`?id=${session.id}`)).json()).session.bookedCount).toBe(1);
+  expect((await post({ action: "cancel-session", id: session.id }, cookies.admin)).status).toBe(200);
+  expect(await Promise.all([balance("a"), balance("b")])).toEqual(before);
+  expect((await post({ action: "book-client", id: session.id, clientId: "planning-it-a" }, cookies.admin)).status).toBe(409);
+});
+
+function pendingAttendance(query = "from=2023-04-05&to=2023-04-05", cookie = cookies.admin) {
+  return fetch(origin + "/api/presences/a-traiter?" + query, { headers: cookie ? { Cookie: cookie } : {} });
+}
+it("restricts pending attendance access, validates dates and isolates centers", async () => {
+  expect((await pendingAttendance(undefined, "")).status).toBe(401);
+  expect((await pendingAttendance(undefined, cookies.a)).status).toBe(403);
+  for (const query of ["from=bad", "from=2023-04-31&to=2023-05-01", "from=2023-05-01&to=2023-04-05", "from=2023-01-01&to=2023-02-01"]) {
+    expect((await pendingAttendance(query)).status).toBe(400);
+  }
+  const member = getFirestore(app).doc("centers/alger/members/planning-it-admin");
+  await member.update({ active: false });
+  expect((await pendingAttendance()).status).toBe(403);
+  await member.update({ active: true });
+  const denied = await (await fetch(origin + "/crm/presences", { headers: { Cookie: cookies.a } })).text();
+  expect(denied).toContain("Accès non autorisé");
+  expect(denied).not.toContain("attendance-from");
+});
+it("summarizes all unfinished sheets beyond 50 courses and updates after pointage", async () => {
+  const db = getFirestore(app), batch = db.batch();
+  const startsAt = parseStudioDateTime("2023-04-05T10:00");
+  for (let i = 0; i < 55; i++) {
+    const id = `pending-sheet-${String(i).padStart(2, "0")}`, ref = db.doc(`centers/alger/sessions/${id}`);
+    batch.set(ref, { ...data, id, centerId: "alger", startsAt, capacity: 4, bookedCount: 3, status: "scheduled" });
+    for (const [key, status] of [["a", "unmarked"], ["b", "present"], ["c", "absent"], ["d", "cancelled"]]) {
+      const clientId = `planning-it-${key}`;
+      batch.set(ref.collection("bookings").doc(clientId), { clientId, sessionId: id, centerId: "alger", status: status === "cancelled" ? "cancelled" : "confirmed", ...(status !== "cancelled" && (status !== "unmarked" || i % 2 === 1) ? { attendance: { status, version: 1 } } : {}), privateNote: "PENDING_PRIVATE_NOTE" });
+    }
+  }
+  for (const [center, id, status, date] of [["oran", "pending-foreign", "scheduled", startsAt], ["alger", "pending-cancelled", "cancelled", startsAt], ["alger", "pending-previous", "scheduled", parseStudioDateTime("2023-04-04T23:59")], ["alger", "pending-next", "scheduled", parseStudioDateTime("2023-04-06T00:00")]] as const) {
+    const ref = db.doc(`centers/${center}/sessions/${id}`);
+    batch.set(ref, { ...data, id, centerId: center, startsAt: date, capacity: 4, bookedCount: 1, status });
+    batch.set(ref.collection("bookings").doc("planning-it-a"), { sessionId: id, clientId: "planning-it-a", centerId: center, status: "confirmed" });
+  }
+  await batch.commit();
+  const response = await pendingAttendance();
+  expect(response.status).toBe(200);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  const report = await response.json();
+  expect(report.pending).toBe(55);
+  expect(report.sessions).toHaveLength(55);
+  expect(report.sessions[0]).toMatchObject({ session: { id: "pending-sheet-00" }, pending: 1, total: 3 });
+  expect(report.sessions.at(-1).session.id).toBe("pending-sheet-54");
+  expect(JSON.stringify(report)).not.toContain("PENDING_PRIVATE_NOTE");
+  const page = await (await fetch(origin + "/crm/presences?from=2023-04-05&to=2023-04-05", { headers: { Cookie: cookies.admin } })).text();
+  expect(page).toContain("pending-sheet-54#presences");
+  expect(page).toContain("pending-attendance-summary");
+  expect((await attendance({ id: "pending-sheet-00", clientId: "planning-it-a", status: "present", version: 0, requestId: randomUUID() })).status).toBe(200);
+  const updated = await (await pendingAttendance()).json();
+  expect(updated.pending).toBe(54);
+  expect(updated.sessions.some((row: { session: { id: string } }) => row.session.id === "pending-sheet-00")).toBe(false);
+});
+it("excludes ongoing, future and empty courses and refuses truncated follow-up", async () => {
+  const db = getFirestore(app), now = Date.now(), batch = db.batch();
+  for (const [id, startsAt, count] of [["pending-running", now - 30 * 60000, 1], ["pending-future", now + 3600000, 1], ["pending-empty", now - 2 * 3600000, 0]] as const) {
+    const ref = db.doc(`centers/alger/sessions/${id}`);
+    batch.set(ref, { ...data, id, centerId: "alger", startsAt, capacity: 4, bookedCount: count, status: "scheduled" });
+    if (count) batch.set(ref.collection("bookings").doc("planning-it-a"), { sessionId: id, clientId: "planning-it-a", centerId: "alger", status: "confirmed" });
+  }
+  await batch.commit();
+  const report = await (await pendingAttendance(`from=${studioDay(now - 86400000)}&to=${studioDay(now + 86400000)}`)).json();
+  for (const id of ["pending-running", "pending-future", "pending-empty"]) expect(report.sessions.some((row: { session: { id: string } }) => row.session.id === id)).toBe(false);
+  for (let offset = 0; offset < 501; offset += 250) {
+    const overflow = db.batch();
+    for (let i = offset; i < Math.min(offset + 250, 501); i++) {
+      const id = `pending-limit-${i}`;
+      overflow.set(db.doc(`centers/alger/sessions/${id}`), { ...data, id, centerId: "alger", startsAt: parseStudioDateTime("2023-04-10T10:00"), status: "scheduled", bookedCount: 0 });
+    }
+    await overflow.commit();
+  }
+  expect((await pendingAttendance("from=2023-04-10&to=2023-04-10")).status).toBe(409);
+});
+
+it("paginates package follow-up, separates future quarterly credits and protects customer data", async () => {
+  const { planSubscription } = await import("../../src/domain/models/subscription");
+  const db = getFirestore(app), at = Date.now(), batch = db.batch();
+  const plan = planSubscription({ offerId: "monthly-4", term: "quarterly", purchaseDate: studioDay() });
+  for (let i = 0; i < 26; i++) {
+    const clientId = `z-followup-${String(i).padStart(2, "0")}`, ref = db.doc(`centers/alger/clients/${clientId}`);
+    batch.set(ref, { id: clientId, centerId: "alger", name: `Suivi ${i}`, status: i === 3 ? "inactive" : "active", email: "followup-private@pilates.test", phone: "", authUid: null, invitationUid: null, version: 1, createdAt: at, updatedAt: at });
+    if (i === 2) {
+      batch.set(ref.collection("subscriptions").doc("followup-sub"), { ...plan, id: "followup-sub", centerId: "alger", clientId, assignedAt: at });
+      plan.periods.forEach((period, index) => batch.set(ref.collection("packages").doc(`p${index}`), { ...period, id: `p${index}`, centerId: "alger", clientId, assignedAt: at, remaining: index === 0 ? 1 : 4, subscriptionId: "followup-sub" }));
+    } else {
+      batch.set(ref.collection("packages").doc("p"), { ...packageInput, id: "p", centerId: "alger", clientId, remaining: i === 1 ? 4 : 1, assignedAt: at, expiresAt: at + (i === 1 ? 30 : 3) * 86400000 });
+    }
+  }
+  batch.set(db.doc("centers/oran/clients/z-followup-foreign"), { id: "z-followup-foreign", centerId: "oran", name: "FOREIGN_FOLLOWUP", status: "active" });
+  await batch.commit();
+  const followup = (after = "z-followup-", cookie = cookies.admin) => fetch(origin + "/api/forfaits/suivi?" + new URLSearchParams({ after }), { headers: cookie ? { Cookie: cookie } : {} });
+  expect((await followup(undefined, "")).status).toBe(401);
+  expect((await followup(undefined, cookies.a)).status).toBe(403);
+  expect((await followup("../other")).status).toBe(400);
+  const response = await followup();
+  expect(response.status).toBe(200);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  const report = await response.json();
+  expect(report.scanned).toBe(25);
+  expect(report.rows).toHaveLength(23);
+  expect(report.next).toBe("z-followup-24");
+  expect(report.rows.find((r: { clientId: string }) => r.clientId === "z-followup-02")).toMatchObject({ remaining: 1, future: 8, low: true, endings: [] });
+  expect(JSON.stringify(report)).not.toContain("followup-private@pilates.test");
+  expect(JSON.stringify(report)).not.toContain("FOREIGN_FOLLOWUP");
+  const next = await (await followup(report.next)).json();
+  expect(next.scanned).toBe(1);
+  expect(next.rows[0].clientId).toBe("z-followup-25");
+  expect(next.next).toBeNull();
+  const html = await (await fetch(origin + "/crm/forfaits/suivi?after=z-followup-", { headers: { Cookie: cookies.admin } })).text();
+  expect(html).toContain("package-followup-scope");
+  expect(html).toContain("z-followup-02/forfaits");
+  const denied = await (await fetch(origin + "/crm/forfaits/suivi", { headers: { Cookie: cookies.a } })).text();
+  expect(denied).toContain("Accès non autorisé");
+  expect(denied).not.toContain("package-followup-scope");
+  const member = db.doc("centers/alger/members/planning-it-admin");
+  await member.update({ active: false });
+  expect((await followup()).status).toBe(403);
+  await member.update({ active: true });
+  const overflow = db.batch();
+  for (let i = 0; i < 100; i++) overflow.set(db.doc(`centers/alger/clients/z-followup-00/packages/extra-${i}`), { ...packageInput, id: `extra-${i}`, centerId: "alger", clientId: "z-followup-00", remaining: 1, assignedAt: at });
+  await overflow.commit();
+  expect((await followup()).status).toBe(409);
+});
+
+it("follows open subscription balances across pages and reacts to payments and corrections", async () => {
+  const { planSubscription } = await import("../../src/domain/models/subscription");
+  const db = getFirestore(app), at = Date.now(), batch = db.batch();
+  const plan = planSubscription({ offerId: "monthly-4", term: "monthly", purchaseDate: "2023-01-01" });
+  const ids: string[] = [];
+  for (let i = 0; i < 26; i++) {
+    const clientId = `zz-balances-${String(i).padStart(2, "0")}`, ref = db.doc(`centers/alger/clients/${clientId}`), id = randomUUID(); ids.push(id);
+    batch.set(ref, { id: clientId, centerId: "alger", name: `Solde ${i}`, status: i === 2 ? "inactive" : "active", email: "balance-private@pilates.test", phone: "", authUid: null, invitationUid: null, version: 1, createdAt: at, updatedAt: at });
+    batch.set(ref.collection("subscriptions").doc(id), { ...plan, id, clientId, centerId: "alger", assignedAt: at, ...(i === 1 ? { paidMinor: 1200000, paymentRecorded: true } : i === 2 ? { paidMinor: 300000, paymentRecorded: true } : i === 3 ? { paidMinor: 0, paymentRecorded: true } : {}) });
+  }
+  for (let i = 0; i < 26; i++) {
+    const id = randomUUID();
+    batch.set(db.doc(`centers/alger/clients/zz-balances-00/subscriptions/${id}`), { ...plan, id, clientId: "zz-balances-00", centerId: "alger", assignedAt: at });
+  }
+  batch.set(db.doc("centers/oran/clients/zz-balances-foreign"), { id: "zz-balances-foreign", centerId: "oran", name: "FOREIGN_BALANCE", status: "active" });
+  await batch.commit();
+  const read = (after = "zz-balances-", cookie = cookies.admin) => fetch(origin + "/api/encaissements/soldes?" + new URLSearchParams({ after, centerId: "oran" }), { headers: cookie ? { Cookie: cookie } : {} });
+  expect((await read(undefined, "")).status).toBe(401);
+  expect((await read(undefined, cookies.a)).status).toBe(403);
+  expect((await read("../other")).status).toBe(400);
+  const response = await read();
+  expect(response.status).toBe(200);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  const report = await response.json();
+  expect(report.scanned).toBe(25);
+  expect(report.rows).toHaveLength(50);
+  expect(report.remainingMinor).toBe(59700000);
+  expect(report.rows.find((r: { clientId: string }) => r.clientId === "zz-balances-02")).toMatchObject({ active: false, state: "partial", remainingMinor: 900000 });
+  expect(report.rows.find((r: { clientId: string }) => r.clientId === "zz-balances-03").state).toBe("history");
+  expect(JSON.stringify(report)).not.toContain("balance-private@pilates.test");
+  expect(JSON.stringify(report)).not.toContain("FOREIGN_BALANCE");
+  const second = await (await read(report.next)).json();
+  expect(second.scanned).toBe(1); expect(second.rows).toHaveLength(1); expect(second.next).toBeNull();
+  const html = await (await fetch(origin + "/crm/encaissements/soldes?after=zz-balances-", { headers: { Cookie: cookies.admin } })).text();
+  expect(html).toContain("open-balance-scope");
+  expect(html).toContain(`zz-balances-00/abonnements/${ids[0]}/paiements`);
+  const denied = await (await fetch(origin + "/crm/encaissements/soldes", { headers: { Cookie: cookies.a } })).text();
+  expect(denied).toContain("Accès non autorisé"); expect(denied).not.toContain("open-balance-scope");
+  const paymentId = randomUUID(), clientId = "zz-balances-00", subscriptionId = ids[0];
+  const mutate = (path: string, body: object) => fetch(origin + path, { method: "POST", headers: { Cookie: cookies.admin, Origin: origin, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  expect((await mutate("/api/encaissements", { clientId, subscriptionId, requestId: paymentId, payment: { method: "cash", amountMinor: 1200000, receivedDate: studioDay() } })).status).toBe(201);
+  const settled = await (await read()).json();
+  expect(settled.rows.some((r: { subscriptionId: string }) => r.subscriptionId === subscriptionId)).toBe(false);
+  expect(settled.remainingMinor).toBe(report.remainingMinor - 1200000);
+  expect((await mutate("/api/encaissements/corrections", { clientId, subscriptionId, requestId: randomUUID(), correction: { paymentId, reason: "Erreur de saisie vérifiée" } })).status).toBe(201);
+  const corrected = await (await read()).json();
+  expect(corrected.rows.find((r: { subscriptionId: string }) => r.subscriptionId === subscriptionId)).toMatchObject({ state: "history", paidMinor: 0, remainingMinor: 1200000 });
+  expect(corrected.remainingMinor).toBe(report.remainingMinor);
+  expect((await db.collection(`centers/alger/clients/${clientId}/packages`).get()).size).toBe(0);
+  const member = db.doc("centers/alger/members/planning-it-admin");
+  await member.update({ active: false }); expect((await read()).status).toBe(403); await member.update({ active: true });
+  const invalid = db.doc(`centers/alger/clients/zz-balances-01/subscriptions/${ids[1]}`);
+  await invalid.update({ paidMinor: -1 }); expect((await read()).status).toBe(503); await invalid.update({ paidMinor: 1200000 });
+  const overflow = db.batch();
+  for (let i = 0; i < 74; i++) { const id = randomUUID(); overflow.set(db.doc(`centers/alger/clients/${clientId}/subscriptions/${id}`), { ...plan, id, clientId, centerId: "alger", assignedAt: at }); }
+  await overflow.commit(); expect((await read()).status).toBe(409);
+});
