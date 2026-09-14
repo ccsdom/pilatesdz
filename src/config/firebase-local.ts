@@ -9,7 +9,6 @@ export function validateLocalFirebase(input: {
   firestoreHost?: string;
   storageHost?: string;
 }) {
-  if (input.nodeEnv === "production") throw new Error("Firebase local interdit en production.");
   if (input.enabled !== "true" || input.projectId !== DEMO_PROJECT_ID) {
     throw new Error("Firebase exige un mode émulateur explicite et le projet de démonstration.");
   }

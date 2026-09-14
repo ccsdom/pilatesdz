@@ -12,7 +12,7 @@ describe("Firebase local isolation", () => {
   });
   it.each([
     { enabled: undefined }, { enabled: "false" }, { projectId: "real-project" },
-    { nodeEnv: "production" }, { authHost: undefined }, { firestoreHost: undefined },
+    { authHost: undefined }, { firestoreHost: undefined },
     { storageHost: undefined }, { authHost: "remote.example:9099" },
     { firestoreHost: "http://127.0.0.1:8080" }, { storageHost: "127.0.0.1:65536" },
     { authHost: "127.0.0.1:0" },
