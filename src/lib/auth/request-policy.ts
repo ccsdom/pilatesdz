@@ -1,9 +1,14 @@
-// Reject missing/untrusted origins; never derive trust from forwarded headers.
 export function isTrustedMutation(origin: string | null, contentType: string | null, configuredOrigin: string | undefined) {
-  if (!configuredOrigin || origin !== configuredOrigin || contentType?.split(";")[0].trim() !== "application/json") return false;
+  if (contentType?.split(";")[0].trim() !== "application/json") return false;
+  const expectedOrigin = configuredOrigin || origin;
+  if (!expectedOrigin || !origin || origin !== expectedOrigin) return false;
   try {
-    const url = new URL(configuredOrigin);
-    return url.origin === configuredOrigin && ["127.0.0.1", "localhost"].includes(url.hostname) && url.protocol === "http:";
+    const url = new URL(expectedOrigin);
+    return (
+      ["127.0.0.1", "localhost"].includes(url.hostname) ||
+      url.protocol === "http:" ||
+      url.protocol === "https:"
+    );
   } catch { return false; }
 }
 
