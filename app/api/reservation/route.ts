@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
 import { clientSearchPrefixes } from "@/domain/models/client";
+import { parseStudioDateTime } from "@/domain/models/planning";
 
 export const runtime = "nodejs";
 
@@ -18,7 +19,7 @@ const reservationSchema = z.object({
   paymentMethod: z.enum(["studio", "credit"]).default("studio"),
 });
 
-const DEFAULT_CENTER = process.env.STUDIO_CENTER_ID || "pilates-center-alger";
+const DEFAULT_CENTER = process.env.CENTER_ID || process.env.STUDIO_CENTER_ID || "alger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,26 +35,21 @@ export async function POST(request: NextRequest) {
     const db = getFirebaseAdmin().firestore;
     const now = Date.now();
 
-    // 1. Check current capacity for this date + slot in Firestore
-    const resRef = db.collection(`centers/${DEFAULT_CENTER}/public_reservations`);
-    const existingBookings = await resRef
-      .where("date", "==", data.date)
-      .where("slot", "==", data.slot)
-      .where("status", "==", "confirmed")
-      .get();
-
-    if (existingBookings.size >= 4) {
-      return NextResponse.json(
-        { error: "Ce créneau est malheureusement complet (4/4 places réservées). Veuillez choisir un autre horaire." },
-        { status: 400 }
-      );
+    // 1. Compute start timestamp & session ID for CRM planning integration
+    const startTimePart = data.slot.split("-")[0].trim(); // e.g. "17:00"
+    const dateTimeStr = `${data.date}T${startTimePart}`; // e.g. "2026-09-17T17:00"
+    let startsAt: number;
+    try {
+      startsAt = parseStudioDateTime(dateTimeStr);
+    } catch {
+      startsAt = now;
     }
 
-    // 2. Generate unique booking reference code
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const bookingReference = `PIL-2026-${randomSuffix}`;
+    const sessionId = `pub_${data.date}_${startTimePart.replace(":", "")}_${data.gender}`;
+    const sessionDocRef = db.doc(`centers/${DEFAULT_CENTER}/sessions/${sessionId}`);
+    const resRef = db.collection(`centers/${DEFAULT_CENTER}/public_reservations`);
 
-    // 3. Upsert / Sync Client in CRM database
+    // 2. Upsert / Sync Client profile in CRM database
     const clientsRef = db.collection(`centers/${DEFAULT_CENTER}/clients`);
     const formattedEmail = data.clientEmail ? data.clientEmail.toLowerCase() : `${data.clientPhone.replace(/\D/g, "")}@temp.pilates.dz`;
 
@@ -80,7 +76,7 @@ export async function POST(request: NextRequest) {
         version: 1,
         createdAt: now,
         updatedAt: now,
-        notes: `Niveau: ${data.clientLevel}. Première réservation le ${data.date} à ${data.slot} (${data.practiceName})`,
+        notes: `Niveau: ${data.clientLevel}. Première réservation en ligne le ${data.date} à ${data.slot} (${data.practiceName})`,
         searchPrefixes: clientSearchPrefixes({
           name: data.clientName,
           email: formattedEmail,
@@ -93,13 +89,72 @@ export async function POST(request: NextRequest) {
       // Use existing client doc ID
       const clientDoc = existingClientSnap.docs[0];
       clientId = clientDoc.id;
+      const existingNotes = clientDoc.data().notes || "";
       await clientDoc.ref.update({
         updatedAt: now,
-        notes: `${clientDoc.data().notes || ""}\nNouvelle réservation le ${data.date} à ${data.slot} (${data.practiceName})`
+        notes: `${existingNotes}\nRéservation en ligne le ${data.date} à ${data.slot} (${data.practiceName})`.trim()
       });
     }
 
-    // 4. Store Reservation Record in Firestore
+    // 3. Ensure Session exists in CRM Planning & Register Booking
+    await db.runTransaction(async (tx) => {
+      const sessionSnap = await tx.get(sessionDocRef);
+      let bookedCount = 0;
+
+      if (!sessionSnap.exists) {
+        // Create session in planning
+        tx.set(sessionDocRef, {
+          id: sessionId,
+          centerId: DEFAULT_CENTER,
+          title: `${data.practiceName} (${data.gender === "femme" ? "Femmes" : "Hommes"})`,
+          instructor: "Équipe Studio",
+          startsAt,
+          durationMinutes: 60,
+          capacity: 4,
+          status: "scheduled",
+          bookedCount: 1,
+          createdAt: now,
+          createdBy: "online_booking"
+        });
+        bookedCount = 1;
+      } else {
+        const sessionData = sessionSnap.data();
+        if (sessionData?.status === "cancelled") {
+          throw new Error("Cette séance est annulée.");
+        }
+        bookedCount = sessionData?.bookedCount || 0;
+        if (bookedCount >= (sessionData?.capacity || 4)) {
+          throw new Error("Ce créneau est complet (4/4 places réservées).");
+        }
+
+        const bookingDocRef = sessionDocRef.collection("bookings").doc(clientId);
+        const bookingSnap = await tx.get(bookingDocRef);
+
+        if (!bookingSnap.exists || bookingSnap.data()?.status !== "confirmed") {
+          bookedCount += 1;
+          tx.update(sessionDocRef, { bookedCount, updatedAt: now });
+        }
+      }
+
+      // Record booking under session for CRM attendance & participant view
+      const bookingDocRef = sessionDocRef.collection("bookings").doc(clientId);
+      tx.set(bookingDocRef, {
+        sessionId,
+        centerId: DEFAULT_CENTER,
+        clientId,
+        status: "confirmed",
+        bookedAt: now,
+        updatedAt: now,
+        updatedBy: "online_booking",
+        attendance: { status: "unmarked", version: 1 }
+      });
+    });
+
+    // 4. Generate unique booking reference code
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const bookingReference = `PIL-2026-${randomSuffix}`;
+
+    // 5. Store Public Reservation Record in Firestore
     const newResDoc = resRef.doc();
     const reservationRecord = {
       id: newResDoc.id,
@@ -115,8 +170,9 @@ export async function POST(request: NextRequest) {
       gender: data.gender,
       date: data.date,
       slot: data.slot,
+      sessionId,
       paymentMethod: data.paymentMethod,
-      status: "confirmed", // confirmed | cancelled | completed
+      status: "confirmed",
       createdAt: now,
       updatedAt: now,
       source: "website_online_booking"
@@ -131,10 +187,10 @@ export async function POST(request: NextRequest) {
       message: "Votre réservation a été enregistrée et synchronisée avec le studio."
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erreur lors de la création de la réservation:", error);
     return NextResponse.json(
-      { error: "Une erreur est survenue lors de l'enregistrement. Veuillez réessayer ou contacter le studio au 05 53 02 17 14." },
+      { error: error?.message || "Une erreur est survenue lors de l'enregistrement. Veuillez réessayer ou contacter le studio au 05 53 02 17 14." },
       { status: 500 }
     );
   }

@@ -13,7 +13,7 @@ const contactSchema = z.object({
   message: z.string().trim().min(5, "Le message doit contenir au moins 5 caractères.").max(2000),
 });
 
-const DEFAULT_CENTER = process.env.STUDIO_CENTER_ID || "pilates-center-alger";
+const DEFAULT_CENTER = process.env.CENTER_ID || process.env.STUDIO_CENTER_ID || "alger";
 
 export async function POST(request: NextRequest) {
   try {
