@@ -1,0 +1,38 @@
+# Configuration Firebase App Hosting pour Pilates Center Alger
+runConfig:
+  cpu: 1
+  memoryMiB: 512
+  minInstances: 0
+  maxInstances: 10
+  concurrency: 80
+
+env:
+  - variable: FIREBASE_USE_EMULATORS
+    value: "false"
+
+  - variable: NEXT_PUBLIC_FIREBASE_USE_EMULATORS
+    value: "false"
+
+  - variable: FIREBASE_PROJECT_ID
+    value: "pilates-center-9dee6"
+
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "pilates-center-9dee6"
+
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyAtMTok6_-exMx5OEfjY68su6aD3ji07Ro"
+
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:736869698241:web:71bb6d30d3610cfb642240"
+
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "pilates-center-9dee6.firebaseapp.com"
+
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "pilates-center-9dee6.firebasestorage.app"
+
+  - variable: CENTER_ID
+    value: "alger"
+
+  - variable: APP_ORIGIN
+    value: "https://pilatesdz.com"
