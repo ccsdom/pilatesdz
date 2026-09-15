@@ -48,7 +48,7 @@ export function StudioPricing() {
 
               <div className="mt-8 border-t border-[#f0e8dd] pt-6">
                 <Link
-                  href="/espace-cliente"
+                  href="/reservation"
                   className="inline-flex w-full items-center justify-center rounded-full border border-[#b7893b]/40 bg-transparent px-5 py-3 text-sm font-semibold text-[#1a1714] transition-all hover:bg-[#1a1714] hover:text-white"
                 >
                   Réserver cette séance
@@ -136,7 +136,7 @@ export function StudioPricing() {
 
               <div className="mt-8 border-t border-[#cdae72]/30 pt-6">
                 <Link
-                  href="/espace-cliente"
+                  href="/reservation"
                   className={`inline-flex w-full items-center justify-center rounded-full px-5 py-3.5 text-sm font-semibold transition-all ${
                     idx === 1 
                       ? "bg-[#1a1714] text-white shadow-lg hover:bg-[#b7893b] hover:text-black" 

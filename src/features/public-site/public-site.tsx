@@ -38,7 +38,7 @@ export function PublicSite() {
               <span>05 53 02 17 14</span>
             </a>
             <Link 
-              href="/espace-cliente" 
+              href="/reservation" 
               className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-[#1c1917] px-6 py-2.5 text-xs font-semibold tracking-wider text-white shadow-md transition-all duration-300 hover:bg-[#b7893b] hover:text-black hover:shadow-xl hover:shadow-[#b7893b]/20"
             >
               <span>Réserver</span>
@@ -80,7 +80,7 @@ export function PublicSite() {
 
               <div className="mt-10 flex flex-wrap items-center gap-4">
                 <Link
-                  href="/espace-cliente"
+                  href="/reservation"
                   className="group inline-flex items-center gap-3 rounded-full bg-[#b7893b] px-8 py-4 text-sm font-semibold text-black shadow-lg shadow-[#b7893b]/25 transition-all duration-300 hover:bg-[#d7b66f] hover:shadow-xl hover:shadow-[#b7893b]/35"
                 >
                   <span>Réserver un cours</span>

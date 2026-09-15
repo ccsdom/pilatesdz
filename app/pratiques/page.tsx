@@ -121,7 +121,7 @@ export default function NosPratiquesPage() {
 
                 <div className="pt-2 flex flex-wrap gap-4">
                   <Link
-                    href="/espace-cliente"
+                    href="/reservation"
                     className="group inline-flex items-center gap-3 rounded-full bg-[#b7893b] px-7 py-3.5 text-sm font-semibold text-black shadow-md transition-all duration-300 hover:bg-[#d7b66f]"
                   >
                     <span>Réserver un cours Reformer</span>
@@ -188,7 +188,7 @@ export default function NosPratiquesPage() {
 
                 <div className="pt-2">
                   <Link
-                    href="/espace-cliente"
+                    href="/reservation"
                     className="inline-flex items-center gap-2 rounded-full border border-[#b7893b] px-7 py-3.5 text-sm font-semibold text-[#1c1917] transition-all hover:bg-[#1c1917] hover:text-white"
                   >
                     <span>Réserver un cours au sol</span>
@@ -265,7 +265,7 @@ export default function NosPratiquesPage() {
 
                 <div className="mt-10 pt-6 border-t border-white/10">
                   <Link
-                    href="/espace-cliente"
+                    href="/reservation"
                     className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#b7893b] py-3.5 text-sm font-semibold text-black hover:bg-[#d7b66f] transition-all"
                   >
                     <span>Voir le planning des cours</span>

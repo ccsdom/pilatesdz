@@ -180,7 +180,7 @@ export default function HorairesPage() {
               </p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
                 <Link
-                  href="/espace-cliente"
+                  href="/reservation"
                   className="inline-flex items-center gap-2 rounded-full bg-[#b7893b] px-7 py-3.5 text-sm font-semibold text-black hover:bg-[#d7b66f]"
                 >
                   <span>Accéder au planning en ligne</span>
