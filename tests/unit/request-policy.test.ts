@@ -3,6 +3,7 @@ import { isTrustedMutation, readLimitedBody } from "@/lib/auth/request-policy";
 const origin = "http://127.0.0.1:3100";
 it("accepts same-origin JSON only", () => {
   expect(isTrustedMutation(origin, "application/json", origin)).toBe(true);
+  expect(isTrustedMutation("https://www.pilatesdz.com", "application/json", "https://pilatesdz.com")).toBe(true);
   expect(isTrustedMutation(null, "application/json", origin)).toBe(false);
   expect(isTrustedMutation("https://evil.test", "application/json", origin)).toBe(false);
   expect(isTrustedMutation(origin, "text/plain", origin)).toBe(false);
