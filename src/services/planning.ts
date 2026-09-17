@@ -29,6 +29,11 @@ export function createPlanningService(repository: PlanningRepository) {
       } catch { throw new ManagementError(400, "Choisissez une période valide de 42 jours maximum."); }
       return repository.rangeSessions(actor, from, to);
     },
+    listReservations(actor: Access, after?: string, limit?: number) {
+      admin(actor);
+      if (after && !/^\d{1,16}_[a-zA-Z0-9_-]{1,128}$/.test(after)) throw new ManagementError(400, "Curseur invalide.");
+      return repository.listReservations(actor, after, limit);
+    },
     create(actor: Access, requestId: string, value: unknown) {
       admin(actor); id(requestId);
       const parsed = sessionInputSchema.safeParse(value);

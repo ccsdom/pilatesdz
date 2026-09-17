@@ -94,3 +94,21 @@ export type BookingStatus = "none" | "confirmed" | "cancelled" | "session-cancel
 export type SessionView = { session: PilatesSession; myBooking: BookingStatus };
 export type PlanningPage = { sessions: SessionView[]; next: string | null; day: string };
 export type SessionDetails = SessionView & { attendees: { clientId: string; name: string; attendance: Attendance }[] };
+export type ReservationRecord = {
+  id: string;
+  sessionId: string;
+  sessionTitle: string;
+  startsAt: number;
+  durationMinutes: number;
+  instructor: string;
+  sessionStatus: "scheduled" | "cancelled";
+  clientId: string;
+  clientName: string;
+  bookingStatus: "confirmed" | "cancelled";
+  attendanceStatus: "unmarked" | "present" | "absent" | "excused";
+  bookedAt: number;
+};
+export type ReservationsPage = {
+  items: ReservationRecord[];
+  nextCursor: string | null;
+};

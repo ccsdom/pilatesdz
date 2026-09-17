@@ -1,11 +1,12 @@
 import type { Access } from "@/domain/models/access";
 import type { PendingAttendanceReport } from "@/domain/models/attendance";
-import type { PilatesSession, SessionInput, PlanningPage, SessionDetails } from "@/domain/models/planning";
+import type { PilatesSession, SessionInput, PlanningPage, SessionDetails, ReservationsPage } from "@/domain/models/planning";
 
 export interface PlanningRepository {
   pendingAttendance(actor: Access, from: string, to: string): Promise<PendingAttendanceReport>;
   daySessions(actor: Access, day: string): Promise<PilatesSession[]>;
   rangeSessions(actor: Access, from: string, to: string): Promise<PilatesSession[]>;
+  listReservations(actor: Access, after?: string, limit?: number): Promise<ReservationsPage>;
   create(actor: Access, id: string, input: SessionInput): Promise<PilatesSession>;
   list(actor: Access, day: string, after?: string): Promise<PlanningPage>;
   get(actor: Access, id: string): Promise<SessionDetails>;

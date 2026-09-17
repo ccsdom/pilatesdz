@@ -96,6 +96,68 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
         return snapshot.docs.map(doc => decode(actor, doc.id, doc.data()));
       });
     },
+    async listReservations(actor, after, limit = 20) {
+      return db.runTransaction(async tx => {
+        await identity(tx, actor, true);
+        let query = db.collection(`${root(actor)}/sessions`)
+          .orderBy("startsAt", "desc")
+          .orderBy(FieldPath.documentId())
+          .limit(40);
+        
+        if (after) {
+          const split = after.indexOf("_");
+          if (split > 0) {
+            query = query.startAfter(Number(after.slice(0, split)), safeId(after.slice(split + 1)));
+          }
+        }
+
+        const snapshot = await tx.get(query);
+        const items: any[] = [];
+        const clientCache = new Map<string, string>();
+
+        for (const doc of snapshot.docs) {
+          const session = decode(actor, doc.id, doc.data());
+          const bookingsSnap = await tx.get(sessionRef(actor, doc.id).collection("bookings").limit(35));
+
+          for (const bDoc of bookingsSnap.docs) {
+            const bData = bDoc.data();
+            if (!bData || !["confirmed", "cancelled"].includes(bData.status)) continue;
+
+            const clientId = bDoc.id;
+            if (!clientCache.has(clientId)) {
+              const profile = (await tx.get(profileRef(actor, clientId))).data();
+              clientCache.set(clientId, profile?.name || "Cliente");
+            }
+
+            const attendanceState = readAttendance(bData.attendance);
+
+            items.push({
+              id: `${session.id}_${clientId}`,
+              sessionId: session.id,
+              sessionTitle: session.title,
+              startsAt: session.startsAt,
+              durationMinutes: session.durationMinutes,
+              instructor: session.instructor,
+              sessionStatus: session.status,
+              clientId,
+              clientName: clientCache.get(clientId) || "Cliente",
+              bookingStatus: bData.status,
+              attendanceStatus: attendanceState.status,
+              bookedAt: bData.bookedAt || session.startsAt,
+            });
+          }
+        }
+
+        // Sort reservations chronologically descending
+        items.sort((a, b) => b.startsAt - a.startsAt);
+
+        const pageItems = items.slice(0, limit);
+        const lastSession = snapshot.docs.at(-1);
+        const nextCursor = snapshot.size >= 40 && lastSession ? `${lastSession.data().startsAt}_${lastSession.id}` : null;
+
+        return { items: pageItems, nextCursor };
+      });
+    },
     async create(actor, id, input) {
       return db.runTransaction(async (tx) => {
         await identity(tx, actor, true);
