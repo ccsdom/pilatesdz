@@ -25,6 +25,7 @@ export default async function Page() {
   try {
     data = await getPlanningService().listReservations(result.access, undefined, 20);
   } catch (error) {
+    console.error("Erreur chargement réservations:", error);
     return (
       <AccessErrorView
         message={
