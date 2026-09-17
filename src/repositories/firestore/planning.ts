@@ -105,13 +105,14 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
 
       let query = db.collection(`${rootStr}/sessions`)
         .orderBy("startsAt", "desc")
-        .orderBy(FieldPath.documentId())
         .limit(30);
 
       if (after) {
         const split = after.indexOf("_");
         if (split > 0) {
-          query = query.startAfter(Number(after.slice(0, split)), safeId(after.slice(split + 1)));
+          query = query.startAfter(Number(after.slice(0, split)));
+        } else if (Number.isFinite(Number(after))) {
+          query = query.startAfter(Number(after));
         }
       }
 

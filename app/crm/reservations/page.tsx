@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getPageAccess } from "@/lib/auth/page-access";
 import { getPlanningService } from "@/lib/planning/server";
+import { AccessError } from "@/domain/models/access";
 import { ManagementError } from "@/domain/ports/access-management";
 import { ClientShell } from "@/features/clients/client-shell";
 import { AccessErrorView } from "@/features/auth/access-error";
@@ -29,7 +30,7 @@ export default async function Page() {
     return (
       <AccessErrorView
         message={
-          error instanceof ManagementError
+          error instanceof ManagementError || error instanceof AccessError
             ? error.message
             : "Historique des réservations temporairement indisponible."
         }
