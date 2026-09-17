@@ -5,6 +5,7 @@ import type { PilatesSession, SessionInput, PlanningPage, SessionDetails } from 
 export interface PlanningRepository {
   pendingAttendance(actor: Access, from: string, to: string): Promise<PendingAttendanceReport>;
   daySessions(actor: Access, day: string): Promise<PilatesSession[]>;
+  rangeSessions(actor: Access, from: string, to: string): Promise<PilatesSession[]>;
   create(actor: Access, id: string, input: SessionInput): Promise<PilatesSession>;
   list(actor: Access, day: string, after?: string): Promise<PlanningPage>;
   get(actor: Access, id: string): Promise<SessionDetails>;

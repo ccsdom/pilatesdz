@@ -21,6 +21,14 @@ export function createPlanningService(repository: PlanningRepository) {
       try { dayRange(day); } catch { throw new ManagementError(400, "Date du planning invalide."); }
       return repository.daySessions(actor, day);
     },
+    rangeSessions(actor: Access, from: string, to: string) {
+      admin(actor);
+      try {
+        const start = dayRange(from).start, end = dayRange(to).end;
+        if (end <= start || end - start > 42 * 86400000) throw new Error("range");
+      } catch { throw new ManagementError(400, "Choisissez une période valide de 42 jours maximum."); }
+      return repository.rangeSessions(actor, from, to);
+    },
     create(actor: Access, requestId: string, value: unknown) {
       admin(actor); id(requestId);
       const parsed = sessionInputSchema.safeParse(value);

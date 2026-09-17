@@ -1,5 +1,17 @@
 import { expect, it, vi } from "vitest";
-import { studioDay, studioDateTime, parseStudioDateTime, dayRange, sessionInputSchema, storedSessionSchema } from "../../src/domain/models/planning";
+import {
+  studioDay,
+  studioDateTime,
+  parseStudioDateTime,
+  dayRange,
+  sessionInputSchema,
+  storedSessionSchema,
+  weekRange,
+  monthRange,
+  getDaysOfWeek,
+  getDaysOfMonthGrid,
+  startOfWeekDay,
+} from "../../src/domain/models/planning";
 import { createPlanningService } from "../../src/services/planning";
 import type { Access } from "../../src/domain/models/access";
 
@@ -13,7 +25,7 @@ it("enforces new course limits while preserving historical sessions", () => {
   expect(sessionInputSchema.safeParse(legacy).success).toBe(false);
 });
 function setup() {
-  const repository = { create: vi.fn(), list: vi.fn(), daySessions: vi.fn(), pendingAttendance: vi.fn(), get: vi.fn(), book: vi.fn(), cancelBooking: vi.fn(), cancelSession: vi.fn() };
+  const repository = { create: vi.fn(), list: vi.fn(), daySessions: vi.fn(), rangeSessions: vi.fn(), pendingAttendance: vi.fn(), get: vi.fn(), book: vi.fn(), cancelBooking: vi.fn(), cancelSession: vi.fn() };
   return { repository, service: createPlanningService(repository) };
 }
 it("interprets studio input independently of the computer's time zone", () => {
@@ -79,3 +91,36 @@ it("restricts attendance follow-up to administrators and at most 31 valid days",
   service.pendingAttendance(admin, "2024-01-01", "2024-01-31");
   expect(repository.pendingAttendance).toHaveBeenCalledWith(admin, "2024-01-01", "2024-01-31");
 });
+
+it("computes week and month date ranges correctly for multi-view planning", () => {
+  expect(startOfWeekDay("2026-09-17")).toBe("2026-09-14");
+  const weekDays = getDaysOfWeek("2026-09-17");
+  expect(weekDays.length).toBe(7);
+  expect(weekDays[0]).toBe("2026-09-14");
+  expect(weekDays[6]).toBe("2026-09-20");
+
+  const monthGrid = getDaysOfMonthGrid("2026-09");
+  expect(monthGrid.length).toBe(42);
+  expect(monthGrid[0].date).toBe("2026-08-31");
+
+  const wRange = weekRange("2026-09-17");
+  expect(wRange.monday).toBe("2026-09-14");
+  expect(wRange.end > wRange.start).toBe(true);
+
+  const mRange = monthRange("2026-09");
+  expect(mRange.yearMonth).toBe("2026-09");
+  expect(mRange.prevYearMonth).toBe("2026-08");
+  expect(mRange.nextYearMonth).toBe("2026-10");
+});
+
+it("validates rangeSessions for administrators within 42 days", () => {
+  const repository = { create: vi.fn(), list: vi.fn(), daySessions: vi.fn(), rangeSessions: vi.fn(), pendingAttendance: vi.fn(), get: vi.fn(), book: vi.fn(), cancelBooking: vi.fn(), cancelSession: vi.fn() };
+  const service = createPlanningService(repository);
+
+  expect(() => service.rangeSessions(client, "2026-09-01", "2026-09-07")).toThrow();
+  expect(() => service.rangeSessions(admin, "bad", "2026-09-07")).toThrow();
+
+  service.rangeSessions(admin, "2026-09-01", "2026-09-07");
+  expect(repository.rangeSessions).toHaveBeenCalledWith(admin, "2026-09-01", "2026-09-07");
+});
+

@@ -84,6 +84,18 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
         return snapshot.docs.map(doc => decode(actor, doc.id, doc.data()));
       });
     },
+    async rangeSessions(actor, from, to) {
+      return db.runTransaction(async tx => {
+        await identity(tx, actor, true);
+        const start = dayRange(from).start;
+        const end = dayRange(to).end;
+        const snapshot = await tx.get(db.collection(`${root(actor)}/sessions`)
+          .where("startsAt", ">=", start).where("startsAt", "<", end)
+          .orderBy("startsAt").orderBy(FieldPath.documentId()).limit(1001));
+        if (snapshot.size > 1000) throw new ManagementError(409, "Plus de 1000 séances sur cette période. Réduisez la plage pour consulter le planning.");
+        return snapshot.docs.map(doc => decode(actor, doc.id, doc.data()));
+      });
+    },
     async create(actor, id, input) {
       return db.runTransaction(async (tx) => {
         await identity(tx, actor, true);
