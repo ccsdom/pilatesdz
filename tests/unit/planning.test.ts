@@ -25,7 +25,7 @@ it("enforces new course limits while preserving historical sessions", () => {
   expect(sessionInputSchema.safeParse(legacy).success).toBe(false);
 });
 function setup() {
-  const repository = { create: vi.fn(), list: vi.fn(), daySessions: vi.fn(), rangeSessions: vi.fn(), pendingAttendance: vi.fn(), get: vi.fn(), book: vi.fn(), cancelBooking: vi.fn(), cancelSession: vi.fn() };
+  const repository = { create: vi.fn(), list: vi.fn(), daySessions: vi.fn(), rangeSessions: vi.fn(), listReservations: vi.fn(), pendingAttendance: vi.fn(), get: vi.fn(), book: vi.fn(), cancelBooking: vi.fn(), cancelSession: vi.fn() };
   return { repository, service: createPlanningService(repository) };
 }
 it("interprets studio input independently of the computer's time zone", () => {
@@ -114,7 +114,7 @@ it("computes week and month date ranges correctly for multi-view planning", () =
 });
 
 it("validates rangeSessions for administrators within 42 days", () => {
-  const repository = { create: vi.fn(), list: vi.fn(), daySessions: vi.fn(), rangeSessions: vi.fn(), pendingAttendance: vi.fn(), get: vi.fn(), book: vi.fn(), cancelBooking: vi.fn(), cancelSession: vi.fn() };
+  const repository = { create: vi.fn(), list: vi.fn(), daySessions: vi.fn(), rangeSessions: vi.fn(), listReservations: vi.fn(), pendingAttendance: vi.fn(), get: vi.fn(), book: vi.fn(), cancelBooking: vi.fn(), cancelSession: vi.fn() };
   const service = createPlanningService(repository);
 
   expect(() => service.rangeSessions(client, "2026-09-01", "2026-09-07")).toThrow();
@@ -122,5 +122,16 @@ it("validates rangeSessions for administrators within 42 days", () => {
 
   service.rangeSessions(admin, "2026-09-01", "2026-09-07");
   expect(repository.rangeSessions).toHaveBeenCalledWith(admin, "2026-09-01", "2026-09-07");
+});
+
+it("validates listReservations for administrators only and verifies cursor format", () => {
+  const repository = { create: vi.fn(), list: vi.fn(), daySessions: vi.fn(), rangeSessions: vi.fn(), listReservations: vi.fn(), pendingAttendance: vi.fn(), get: vi.fn(), book: vi.fn(), cancelBooking: vi.fn(), cancelSession: vi.fn() };
+  const service = createPlanningService(repository);
+
+  expect(() => service.listReservations(client)).toThrow();
+  expect(() => service.listReservations(admin, "invalid-cursor")).toThrow();
+
+  service.listReservations(admin, "1789646400000_session1", 20);
+  expect(repository.listReservations).toHaveBeenCalledWith(admin, "1789646400000_session1", 20);
 });
 
