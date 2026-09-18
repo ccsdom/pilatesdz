@@ -80,15 +80,15 @@ export function SessionPreviewModal({
 
   // Derived session info (fallback to initialData while loading)
   const session = details?.session || (initialData ? {
-    id: initialData.sessionId || (initialData as PilatesSession).id,
-    title: initialData.sessionTitle || (initialData as PilatesSession).title,
+    id: "sessionId" in initialData ? initialData.sessionId : initialData.id,
+    title: "sessionTitle" in initialData ? initialData.sessionTitle : initialData.title,
     instructor: initialData.instructor,
     startsAt: initialData.startsAt,
     durationMinutes: initialData.durationMinutes,
-    capacity: (initialData as PilatesSession).capacity || 8,
-    bookedCount: (initialData as PilatesSession).bookedCount || 0,
-    status: (initialData as PilatesSession).status || (initialData as ReservationRecord).sessionStatus || "scheduled",
-    centerId: (initialData as PilatesSession).centerId || "",
+    capacity: "capacity" in initialData ? initialData.capacity : 8,
+    bookedCount: "bookedCount" in initialData ? initialData.bookedCount : 0,
+    status: "status" in initialData ? initialData.status : initialData.sessionStatus,
+    centerId: "centerId" in initialData ? initialData.centerId : "",
   } : null);
 
   const attendees = details?.attendees || [];
