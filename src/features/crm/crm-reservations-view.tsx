@@ -18,9 +18,11 @@ import {
   Loader2,
   BookmarkCheck,
   ChevronDown,
+  Eye,
 } from "lucide-react";
 import { studioDateTime, type ReservationRecord } from "@/domain/models/planning";
 import { Button } from "@/components/ui/button";
+import { SessionPreviewModal } from "@/features/planning/session-preview-modal";
 
 interface CrmReservationsViewProps {
   initialItems: ReservationRecord[];
@@ -37,6 +39,17 @@ export function CrmReservationsView({
   const [nextCursor, setNextCursor] = useState<string | null>(initialCursor);
   const [loadingMore, setLoadingMore] = useState(false);
   const [view, setView] = useState<"grid" | "list">("grid");
+
+  // Preview Modal State
+  const [previewSessionId, setPreviewSessionId] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewInitialData, setPreviewInitialData] = useState<ReservationRecord | null>(null);
+
+  const handleOpenPreview = (item: ReservationRecord) => {
+    setPreviewSessionId(item.sessionId);
+    setPreviewInitialData(item);
+    setPreviewOpen(true);
+  };
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -231,9 +244,9 @@ export function CrmReservationsView({
 
       {/* RENDER GRID OR LIST */}
       {view === "grid" ? (
-        <GridView items={filteredItems} now={now} />
+        <GridView items={filteredItems} now={now} onPreview={handleOpenPreview} />
       ) : (
-        <ListView items={filteredItems} now={now} />
+        <ListView items={filteredItems} now={now} onPreview={handleOpenPreview} />
       )}
 
       {/* LOAD MORE BUTTON */}
@@ -258,6 +271,14 @@ export function CrmReservationsView({
           </Button>
         </div>
       )}
+
+      {/* SESSION PREVIEW MODAL */}
+      <SessionPreviewModal
+        sessionId={previewSessionId}
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        initialData={previewInitialData}
+      />
     </div>
   );
 }
@@ -265,7 +286,15 @@ export function CrmReservationsView({
 /* =========================================================================
    VUE 1: GRID VIEW (Cartes sublimes avec badges & émargement)
    ========================================================================= */
-function GridView({ items, now }: { items: ReservationRecord[]; now: number }) {
+function GridView({
+  items,
+  now,
+  onPreview,
+}: {
+  items: ReservationRecord[];
+  now: number;
+  onPreview: (item: ReservationRecord) => void;
+}) {
   if (items.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-[#c9bda8] bg-[#fffdf9] p-12 text-center shadow-sm">
@@ -369,12 +398,21 @@ function GridView({ items, now }: { items: ReservationRecord[]; now: number }) {
             </div>
 
             {/* Action Footer */}
-            <div className="mt-5 pt-4 border-t border-[#f0e7da] flex items-center justify-between">
+            <div className="mt-5 pt-4 border-t border-[#f0e7da] flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => onPreview(item)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#f4ece0] hover:bg-[#ede0c8] px-3.5 py-2 text-xs font-bold text-[#765522] transition-colors"
+              >
+                <Eye size={14} />
+                <span>Aperçu réservation</span>
+              </button>
+
               <Link
                 href={`/crm/planning/${item.sessionId}#presences`}
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-[#8d6729] hover:text-[#111] transition-colors"
               >
-                <span>Feuille d'émargement & détail</span>
+                <span>Émargement & détail</span>
                 <ArrowRight size={14} />
               </Link>
             </div>
@@ -388,7 +426,15 @@ function GridView({ items, now }: { items: ReservationRecord[]; now: number }) {
 /* =========================================================================
    VUE 2: LIST VIEW (Tableau filtrable)
    ========================================================================= */
-function ListView({ items, now }: { items: ReservationRecord[]; now: number }) {
+function ListView({
+  items,
+  now,
+  onPreview,
+}: {
+  items: ReservationRecord[];
+  now: number;
+  onPreview: (item: ReservationRecord) => void;
+}) {
   if (items.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-[#c9bda8] bg-[#fffdf9] p-12 text-center shadow-sm">
@@ -411,7 +457,7 @@ function ListView({ items, now }: { items: ReservationRecord[]; now: number }) {
             <th className="px-6 py-4">Coach</th>
             <th className="px-6 py-4">Statut Réservation</th>
             <th className="px-6 py-4">Émargement</th>
-            <th className="px-6 py-4 text-right">Action</th>
+            <th className="px-6 py-4 text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[#f2e9dc]">
@@ -484,14 +530,25 @@ function ListView({ items, now }: { items: ReservationRecord[]; now: number }) {
                   )}
                 </td>
 
-                {/* Action */}
+                {/* Actions */}
                 <td className="px-6 py-4 whitespace-nowrap text-right">
-                  <Link
-                    href={`/crm/planning/${item.sessionId}#presences`}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-[#8d6729] hover:underline"
-                  >
-                    <span>Émarger →</span>
-                  </Link>
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onPreview(item)}
+                      className="inline-flex items-center gap-1 rounded-xl bg-[#f4ece0] hover:bg-[#ede0c8] px-3 py-1.5 text-xs font-bold text-[#765522] transition-colors"
+                    >
+                      <Eye size={13} />
+                      <span>Aperçu</span>
+                    </button>
+
+                    <Link
+                      href={`/crm/planning/${item.sessionId}#presences`}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-[#8d6729] hover:underline"
+                    >
+                      <span>Émarger →</span>
+                    </Link>
+                  </div>
                 </td>
               </tr>
             );

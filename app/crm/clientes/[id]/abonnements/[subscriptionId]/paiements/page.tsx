@@ -10,6 +10,8 @@ import { ManagementError } from "@/domain/ports/access-management";
 import { ClientShell } from "@/features/clients/client-shell";
 import { AccessErrorView } from "@/features/auth/access-error";
 import { PaymentForm } from "@/features/packages/payment-form";
+import { CreditCard } from "lucide-react";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Encaissements — Pilates Center Alger", robots: { index: false, follow: false } };
@@ -27,7 +29,7 @@ export default async function Page({ params, searchParams }: {
   const basePath = `/crm/clientes/${id}/abonnements/${subscriptionId}/paiements`;
   return <ClientShell centerId={result.access.centerId} active="packages">
     <Link href={`/crm/clientes/${id}/forfaits`} className="underline">Retour aux abonnements</Link>
-    <h1 className="font-serif text-4xl">Encaissements · {client.profile.name}</h1>
+    <div className="flex items-center gap-3 mt-2"><CreditCard className="h-8 w-8 text-[#b7893b]" /><h1 className="font-serif text-4xl">Encaissements · {client.profile.name}</h1></div>
     <p>Abonnement débutant le {page.purchaseDate}. Le journal retrace les espèces déclarées reçues par le centre.</p>
     <dl className="grid gap-4 rounded-2xl border bg-[#fffdf9] p-6 sm:grid-cols-3">
       <div><dt>Tarif enregistré</dt><dd className="text-xl">{formatCashAmount(page.totalMinor)}</dd></div>

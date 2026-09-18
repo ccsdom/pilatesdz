@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   AlertCircle,
   XCircle,
+  Eye,
 } from "lucide-react";
 import {
   studioDateTime,
@@ -29,6 +30,7 @@ import {
   type PilatesSession,
 } from "@/domain/models/planning";
 import { Button } from "@/components/ui/button";
+import { SessionPreviewModal } from "./session-preview-modal";
 
 export type ViewMode = "grid" | "day" | "week" | "month";
 
@@ -62,6 +64,17 @@ export function CrmPlanningViews({
   );
   const [instructorFilter, setInstructorFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  // Modal Preview state
+  const [previewSessionId, setPreviewSessionId] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewInitialData, setPreviewInitialData] = useState<PilatesSession | null>(null);
+
+  const handleOpenPreview = (session: PilatesSession) => {
+    setPreviewSessionId(session.id);
+    setPreviewInitialData(session);
+    setPreviewOpen(true);
+  };
 
   const todayStr = useMemo(() => studioDay(now), [now]);
   const currentMonthStr = useMemo(() => selectedDay.slice(0, 7), [selectedDay]);
@@ -322,10 +335,10 @@ export function CrmPlanningViews({
 
       {/* RENDER SELECTED VIEW */}
       {view === "grid" && (
-        <GridView sessions={filteredSessions} now={now} />
+        <GridView sessions={filteredSessions} now={now} onPreview={handleOpenPreview} />
       )}
       {view === "day" && (
-        <DayView sessions={filteredSessions} selectedDay={selectedDay} now={now} />
+        <DayView sessions={filteredSessions} selectedDay={selectedDay} now={now} onPreview={handleOpenPreview} />
       )}
       {view === "week" && (
         <WeekView
@@ -334,6 +347,7 @@ export function CrmPlanningViews({
           now={now}
           todayStr={todayStr}
           onSelectDay={(day) => updateUrl("day", day)}
+          onPreview={handleOpenPreview}
         />
       )}
       {view === "month" && (
@@ -342,8 +356,17 @@ export function CrmPlanningViews({
           yearMonth={currentMonthStr}
           todayStr={todayStr}
           onSelectDay={(day) => updateUrl("day", day)}
+          onPreview={handleOpenPreview}
         />
       )}
+
+      {/* MODAL PREVIEW */}
+      <SessionPreviewModal
+        sessionId={previewSessionId}
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        initialData={previewInitialData}
+      />
     </div>
   );
 }
@@ -351,7 +374,15 @@ export function CrmPlanningViews({
 /* =========================================================================
    VUE 1: GRID VIEW (Grille de cartes épurées)
    ========================================================================= */
-function GridView({ sessions, now }: { sessions: PilatesSession[]; now: number }) {
+function GridView({
+  sessions,
+  now,
+  onPreview,
+}: {
+  sessions: PilatesSession[];
+  now: number;
+  onPreview: (s: PilatesSession) => void;
+}) {
   if (sessions.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-[#c9bda8] bg-[#fffdf9] p-12 text-center shadow-sm">
@@ -462,13 +493,22 @@ function GridView({ sessions, now }: { sessions: PilatesSession[]; now: number }
               </div>
             </div>
 
-            {/* Card Action Link */}
-            <div className="mt-6 pt-4 border-t border-[#f0e7da] flex items-center justify-between">
+            {/* Card Action Links */}
+            <div className="mt-6 pt-4 border-t border-[#f0e7da] flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => onPreview(s)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#f4ece0] hover:bg-[#ede0c8] px-3.5 py-2 text-xs font-bold text-[#765522] transition-colors"
+              >
+                <Eye size={14} />
+                <span>Aperçu rapide</span>
+              </button>
+
               <Link
                 href={`/crm/planning/${s.id}`}
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-[#8d6729] hover:text-[#111] transition-colors"
               >
-                <span>Gérer la séance & émarge</span>
+                <span>Gérer la séance</span>
                 <ArrowRight size={14} />
               </Link>
             </div>
@@ -486,10 +526,12 @@ function DayView({
   sessions,
   selectedDay,
   now,
+  onPreview,
 }: {
   sessions: PilatesSession[];
   selectedDay: string;
   now: number;
+  onPreview: (s: PilatesSession) => void;
 }) {
   const daySessions = useMemo(() => {
     return sessions
@@ -537,9 +579,8 @@ function DayView({
                       hourSessions.map((s) => {
                         const ended = s.startsAt <= now;
                         return (
-                          <Link
+                          <div
                             key={s.id}
-                            href={`/crm/planning/${s.id}`}
                             className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4 shadow-sm transition-all hover:scale-[1.01] ${
                               s.status === "cancelled"
                                 ? "bg-rose-50/50 border-rose-200"
@@ -563,17 +604,30 @@ function DayView({
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                               <span className="rounded-full bg-[#ede0c8] px-3 py-1 text-xs font-semibold text-[#765522]">
                                 {s.status === "cancelled"
                                   ? "Annulée"
                                   : `${s.bookedCount} / ${s.capacity} inscrites`}
                               </span>
-                              <span className="text-xs font-bold text-[#8b652b] underline">
-                                Voir la feuille →
-                              </span>
+
+                              <button
+                                type="button"
+                                onClick={() => onPreview(s)}
+                                className="inline-flex items-center gap-1 rounded-xl bg-[#f4ece0] hover:bg-[#ede0c8] px-3 py-1.5 text-xs font-bold text-[#765522] transition-colors"
+                              >
+                                <Eye size={13} />
+                                <span>Aperçu</span>
+                              </button>
+
+                              <Link
+                                href={`/crm/planning/${s.id}`}
+                                className="text-xs font-bold text-[#8b652b] underline hover:text-[#111]"
+                              >
+                                Émarge →
+                              </Link>
                             </div>
-                          </Link>
+                          </div>
                         );
                       })
                     )}
@@ -597,12 +651,14 @@ function WeekView({
   now,
   todayStr,
   onSelectDay,
+  onPreview,
 }: {
   sessions: PilatesSession[];
   selectedDay: string;
   now: number;
   todayStr: string;
   onSelectDay: (day: string) => void;
+  onPreview: (s: PilatesSession) => void;
 }) {
   const weekDays = useMemo(() => getDaysOfWeek(selectedDay), [selectedDay]);
 
@@ -657,10 +713,10 @@ function WeekView({
                   daySessions.map((s) => {
                     const ended = s.startsAt <= now;
                     return (
-                      <Link
+                      <div
                         key={s.id}
-                        href={`/crm/planning/${s.id}`}
-                        className={`block rounded-xl border p-2.5 text-xs shadow-2xs transition-all hover:scale-[1.02] ${
+                        onClick={() => onPreview(s)}
+                        className={`group relative block rounded-xl border p-2.5 text-xs shadow-2xs cursor-pointer transition-all hover:scale-[1.02] ${
                           s.status === "cancelled"
                             ? "bg-rose-50 border-rose-200 text-rose-900"
                             : ended
@@ -670,13 +726,16 @@ function WeekView({
                       >
                         <div className="flex items-center justify-between font-bold text-[#8b652b]">
                           <span>{studioDateTime(s.startsAt).slice(11)}</span>
-                          <span className="text-[10px] font-semibold opacity-80">
+                          <span className="text-[10px] font-semibold opacity-80 flex items-center gap-1">
+                            <Eye size={12} className="text-[#b7893b]" />
                             {s.bookedCount}/{s.capacity}
                           </span>
                         </div>
-                        <p className="mt-1 font-semibold text-[#111] truncate">{s.title}</p>
+                        <p className="mt-1 font-semibold text-[#111] truncate group-hover:text-[#b7893b] transition-colors">
+                          {s.title}
+                        </p>
                         <p className="text-[11px] text-[#786b5b] truncate">Coach {s.instructor}</p>
-                      </Link>
+                      </div>
                     );
                   })
                 )}
@@ -697,11 +756,13 @@ function MonthView({
   yearMonth,
   todayStr,
   onSelectDay,
+  onPreview,
 }: {
   sessions: PilatesSession[];
   yearMonth: string;
   todayStr: string;
   onSelectDay: (day: string) => void;
+  onPreview: (s: PilatesSession) => void;
 }) {
   const monthGrid = useMemo(() => getDaysOfMonthGrid(yearMonth), [yearMonth]);
 
@@ -771,11 +832,16 @@ function MonthView({
                   {daySessions.slice(0, 2).map((s) => (
                     <div
                       key={s.id}
-                      className={`truncate rounded-lg px-1.5 py-0.5 text-[10px] font-semibold ${
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPreview(s);
+                      }}
+                      className={`truncate rounded-lg px-1.5 py-0.5 text-[10px] font-semibold cursor-pointer transition-all hover:scale-[1.03] ${
                         s.status === "cancelled"
                           ? "bg-rose-100 text-rose-800"
-                          : "bg-[#f4ebe0] text-[#6b4c1b]"
+                          : "bg-[#f4ebe0] text-[#6b4c1b] hover:bg-[#ede0c8]"
                       }`}
+                      title="Cliquer pour aperçu"
                     >
                       {studioDateTime(s.startsAt).slice(11)} {s.title}
                     </div>
@@ -794,3 +860,4 @@ function MonthView({
     </div>
   );
 }
+

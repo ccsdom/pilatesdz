@@ -9,6 +9,8 @@ import { ClientShell } from "@/features/clients/client-shell";
 import { AccessErrorView } from "@/features/auth/access-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CreditCard, WalletCards, Receipt } from "lucide-react";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Encaissements du centre — Pilates Center Alger", robots: { index: false, follow: false } };
@@ -22,7 +24,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ m
   try { report = await getCashReportService().get(result.access, month, after); }
   catch (error) { return <AccessErrorView message={error instanceof ManagementError ? error.message : "Récapitulatif des encaissements temporairement indisponible."} />; }
   return <ClientShell centerId={result.access.centerId} active="cash">
-    <header className="space-y-3"><h1 className="font-serif text-4xl">Encaissements du centre</h1><p>Espèces déclarées reçues pendant le mois sélectionné, selon leur date de réception à Alger.</p><Link href="/crm/forfaits" className="inline-block underline">Enregistrer des espèces pour une cliente</Link><Link href="/crm/encaissements/soldes" className="block text-sm font-medium text-[#8d6729] underline">Soldes des abonnements à vérifier</Link></header>
+    <header className="space-y-3"><div className="flex items-center gap-3"><CreditCard className="h-8 w-8 text-[#b7893b]" /><h1 className="font-serif text-4xl">Encaissements du centre</h1></div><p>Espèces déclarées reçues pendant le mois sélectionné, selon leur date de réception à Alger.</p><div className="flex flex-wrap items-center gap-4"><Link href="/crm/forfaits" className="inline-flex items-center gap-1.5 underline"><WalletCards className="h-4 w-4" />Enregistrer des espèces pour une cliente</Link><Link href="/crm/encaissements/soldes" className="inline-flex items-center gap-1.5 text-sm font-medium text-[#8d6729] underline"><Receipt className="h-4 w-4" />Soldes des abonnements à vérifier</Link></div></header>
     <form action="/crm/encaissements" className="flex flex-wrap items-end gap-3"><div className="space-y-2"><label htmlFor="cash-month">Mois de réception</label><Input id="cash-month" name="month" type="month" min="2000-01" max="2099-12" required defaultValue={month} /></div><Button type="submit">Afficher</Button></form>
     <dl className="grid gap-4 sm:grid-cols-3">
       <div className="rounded-2xl border bg-[#fffdf9] p-5"><dt>Espèces enregistrées, après corrections</dt><dd data-testid="cash-net" className="mt-3 text-2xl text-[#8b652b]">{formatCashAmount(report.summary.netMinor)}</dd><p className="mt-2 text-sm">{report.summary.count} encaissement(s) conservé(s)</p></div>
