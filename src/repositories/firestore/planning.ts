@@ -140,35 +140,47 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
         }
 
         for (const bDoc of bookingsSnap.docs) {
-          const bData = bDoc.data();
-          if (!bData || !["confirmed", "cancelled"].includes(bData.status)) continue;
+          try {
+            const bData = bDoc.data();
+            if (!bData || !["confirmed", "cancelled"].includes(bData.status)) continue;
 
-          const clientId = bDoc.id;
-          if (!clientCache.has(clientId)) {
-            try {
-              const profileDoc = await db.doc(`${rootStr}/clients/${safeId(clientId)}`).get();
-              clientCache.set(clientId, profileDoc.data()?.name || "Cliente");
-            } catch {
-              clientCache.set(clientId, "Cliente");
+            const clientId = bDoc.id;
+            if (!clientCache.has(clientId)) {
+              try {
+                const profileDoc = await db.doc(`${rootStr}/clients/${safeId(clientId)}`).get();
+                clientCache.set(clientId, profileDoc.data()?.name || "Cliente");
+              } catch {
+                clientCache.set(clientId, "Cliente");
+              }
             }
+
+            let attendanceStatus: "unmarked" | "present" | "absent" | "excused" = "unmarked";
+            try {
+              if (bData.attendance) {
+                attendanceStatus = readAttendance(bData.attendance).status;
+              }
+            } catch {
+              attendanceStatus = "unmarked";
+            }
+
+            items.push({
+              id: `${session.id}_${clientId}`,
+              sessionId: session.id,
+              sessionTitle: session.title,
+              startsAt: session.startsAt,
+              durationMinutes: session.durationMinutes,
+              instructor: session.instructor,
+              sessionStatus: session.status,
+              clientId,
+              clientName: clientCache.get(clientId) || "Cliente",
+              bookingStatus: bData.status,
+              attendanceStatus,
+              bookedAt: bData.bookedAt || session.startsAt,
+            });
+          } catch {
+            // Ignore any single corrupted booking record
+            continue;
           }
-
-          const attendanceState = readAttendance(bData.attendance);
-
-          items.push({
-            id: `${session.id}_${clientId}`,
-            sessionId: session.id,
-            sessionTitle: session.title,
-            startsAt: session.startsAt,
-            durationMinutes: session.durationMinutes,
-            instructor: session.instructor,
-            sessionStatus: session.status,
-            clientId,
-            clientName: clientCache.get(clientId) || "Cliente",
-            bookingStatus: bData.status,
-            attendanceStatus: attendanceState.status,
-            bookedAt: bData.bookedAt || session.startsAt,
-          });
         }
       }
 
