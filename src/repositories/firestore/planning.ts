@@ -97,11 +97,8 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
       });
     },
     async listReservations(actor, after, limit = 20) {
-      if (!/^[a-z0-9-]+$/.test(actor.centerId) || !["admin", "client"].includes(actor.role)) throw new AccessError(403);
+      if (actor.role !== "admin" || !/^[a-z0-9-]+$/.test(actor.centerId)) throw new AccessError(403);
       const rootStr = `centers/${actor.centerId}`;
-      const memberDoc = await db.doc(`${rootStr}/members/${safeId(actor.uid)}`).get();
-      const member = memberDoc.data();
-      if (!member || member.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== "admin" || member.active !== true) throw new AccessError(403);
 
       let query = db.collection(`${rootStr}/sessions`)
         .orderBy("startsAt", "desc")
