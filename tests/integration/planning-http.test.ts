@@ -100,10 +100,17 @@ it("includes old bookings and reports complete monthly metrics across pages with
   expect(response.headers.get("cache-control")).toBe("no-store");
   const first = await response.json();
   expect(first.entries).toHaveLength(20);
+  expect(first.entries.map((entry: { id: string }) => entry.id)).toEqual(Array.from({ length: 20 }, (_, index) => `history-${String(index).padStart(2, "0")}`));
   expect(first.summary).toMatchObject({ present: 1, absent: 1, unmarked: 20, cancelled: 1, "session-cancelled": 1, attendanceRate: 50 });
   expect(JSON.stringify(first)).not.toContain("ADMIN_NOTE_HIDDEN"); expect(JSON.stringify(first)).not.toContain("planning-it-b");
   const second = await (await clientHistory(`month=2020-02&after=${first.next}`, cookies.a)).json();
   expect(second.entries).toHaveLength(4); expect(second.next).toBeNull(); expect(second.summary).toEqual(first.summary);
+  expect(second.entries.map((entry: { id: string }) => entry.id)).toEqual(["history-20", "history-21", "history-22", "history-23"]);
+  const historyPage = await fetch(origin + "/espace-cliente/historique?month=2020-02", { headers: { Cookie: cookies.a } });
+  expect(historyPage.status).toBe(200);
+  const html = await historyPage.text();
+  expect(html).toContain("Mes séances et mon assiduité");
+  expect(html).not.toContain("Historique temporairement indisponible");
   expect(new Set([...first.entries, ...second.entries].map((entry: { id: string }) => entry.id)).size).toBe(24);
   expect((await (await clientHistory("month=2020-02&clientId=planning-it-a")).json()).summary).toEqual(first.summary);
 });

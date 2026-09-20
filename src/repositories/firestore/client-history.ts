@@ -1,5 +1,5 @@
 import "server-only";
-import { FieldPath, type Firestore } from "firebase-admin/firestore";
+import { type Firestore } from "firebase-admin/firestore";
 import { AccessError } from "@/domain/models/access";
 import { clientIdSchema } from "@/domain/models/client";
 import { readAttendance } from "@/domain/models/attendance";
@@ -22,7 +22,10 @@ export function clientHistoryRepository(db: Firestore, now = Date.now): ClientHi
       if (!profile || profile.id !== clientId || profile.centerId !== actor.centerId) throw new ManagementError(404, "Cliente introuvable dans ce centre.");
       if (actor.role === "client" && profile.authUid !== actor.uid) throw new AccessError(403);
       const range = monthRange(month);
-      const sessions = await tx.get(db.collection(`${root}/sessions`).where("startsAt", ">=", range.start).where("startsAt", "<", range.end).orderBy("startsAt", "desc").orderBy(FieldPath.documentId()).limit(501));
+      // A descending date + ascending document ID requires an extra composite
+      // index in production. Read with the automatic date index, then preserve
+      // the historical tie order in memory before applying the page cursor.
+      const sessions = await tx.get(db.collection(`${root}/sessions`).where("startsAt", ">=", range.start).where("startsAt", "<", range.end).orderBy("startsAt", "desc").limit(501));
       // Never present statistics calculated from a silently truncated month.
       if (sessions.size > 500) throw new ManagementError(409, "Ce mois dépasse 500 séances. L’historique nécessite une adaptation avant d’afficher des indicateurs complets.");
       const bookings = sessions.empty ? [] : await tx.getAll(...sessions.docs.map((doc) => doc.ref.collection("bookings").doc(clientId)));
@@ -38,6 +41,7 @@ export function clientHistoryRepository(db: Firestore, now = Date.now): ClientHi
         const session = { ...parsed.data, status: data.status as string };
         entries.push({ id: doc.id, title: session.title, instructor: session.instructor, startsAt: session.startsAt, durationMinutes: session.durationMinutes, status: historyStatus(session, { status: booking.status, attendance: readAttendance(booking.attendance).status }, timestamp) });
       }
+      entries.sort((a, b) => b.startsAt - a.startsAt || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
       const offset = after ? entries.findIndex((entry) => `${entry.startsAt}_${entry.id}` === after) : -1;
       if (after && offset < 0) throw new ManagementError(400, "Cette page a changé. Revenez au début du mois.");
       const page = entries.slice(offset + 1, offset + 21);
