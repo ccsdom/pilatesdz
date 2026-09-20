@@ -6,6 +6,7 @@ import { authErrorResponse } from "@/lib/auth/http";
 import { isTrustedMutation, readLimitedBody } from "@/lib/auth/request-policy";
 import { ManagementError } from "@/domain/ports/access-management";
 import { clientIdSchema, clientInputSchema } from "@/domain/models/client";
+import { directoryFiltersSchema } from "@/domain/models/client-directory";
 
 export const runtime = "nodejs";
 const input = z.discriminatedUnion("action", [
@@ -21,7 +22,10 @@ export async function GET(request: NextRequest) {
     const actor = await getAuthService().authorize(request.cookies.get(SESSION_COOKIE)?.value, ["admin"]);
     const params = request.nextUrl.searchParams;
     const id = params.get("id");
-    return json(id ? await getClientService().get(actor, id) : await getClientService().list(actor, params.get("q") ?? "", params.get("after") ?? undefined));
+    if (id) return json(await getClientService().get(actor, id));
+    const filters = directoryFiltersSchema.safeParse({ status: params.get("status") ?? "all", contact: params.get("contact") ?? "all" });
+    if (!filters.success) return json({ error: "Filtres invalides." }, 400);
+    return json(await getClientService().directory(actor, params.get("q") ?? "", params.get("after") ?? undefined, filters.data));
   } catch (error) { return failure(error); }
 }
 

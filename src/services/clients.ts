@@ -2,6 +2,8 @@ import { AccessError, type Access } from "@/domain/models/access";
 import { clientIdSchema, clientInputSchema } from "@/domain/models/client";
 import { ManagementError, type AccountProvisioner } from "@/domain/ports/access-management";
 import type { ClientRepository } from "@/domain/ports/clients";
+import { directoryFiltersSchema, matchesDirectory, type DirectoryFilters } from "@/domain/models/client-directory";
+import type { ClientProfile } from "@/domain/models/client";
 
 export function createClientService(repository: ClientRepository, accounts: AccountProvisioner) {
   function admin(actor: Access) { if (actor.role !== "admin") throw new AccessError(403); }
@@ -23,6 +25,21 @@ export function createClientService(repository: ClientRepository, accounts: Acco
       admin(actor);
       if (search.length > 254) throw new ManagementError(400, "Recherche trop longue.");
       return repository.list(actor, search, after ? id(after) : undefined);
+    },
+    async directory(actor: Access, search = "", after?: string, filters: DirectoryFilters = { status: "all", contact: "all" }) {
+      admin(actor);
+      if (search.length > 254 || !directoryFiltersSchema.safeParse(filters).success) throw new ManagementError(400, "Filtres invalides.");
+      let cursor = after ? id(after) : undefined;
+      const clients: ClientProfile[] = [];
+      // Scan a bounded number of existing pages, preserving the repository cursor.
+      // A sparse filter may return no match and a continuation: the UI can continue.
+      for (let scan = 0; scan < 10; scan++) {
+        const page = await repository.list(actor, search, cursor);
+        clients.push(...page.clients.filter(client => matchesDirectory(client, filters)));
+        if (!page.next || clients.length >= 25) return { clients, next: page.next };
+        cursor = page.next;
+      }
+      return { clients, next: cursor ?? null };
     },
     async invite(actor: Access, clientId: string) {
       admin(actor); id(clientId);

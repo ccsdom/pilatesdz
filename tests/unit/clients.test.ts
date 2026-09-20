@@ -3,6 +3,7 @@ import { clientInputSchema, clientSearchPrefixes, normalizeSearch, type ClientPr
 import { createClientService } from "../../src/services/clients";
 import { ManagementError } from "../../src/domain/ports/access-management";
 import type { Access } from "../../src/domain/models/access";
+import { clientsCsv } from "../../src/domain/models/client-directory";
 
 const admin: Access = { uid: "admin", centerId: "alger", role: "admin" };
 const input = { name: "Émilie Ben-Ali", email: "emilie@pilates.test", phone: "+213 550 12 34 56", status: "active" as const };
@@ -12,6 +13,32 @@ function setup() {
   const accounts = { create: vi.fn().mockResolvedValue("reserved"), invitation: vi.fn().mockResolvedValue("local-link") };
   return { repository, accounts, service: createClientService(repository, accounts) };
 }
+describe("directory", () => {
+  it("finds matching profiles beyond the first repository page", async () => {
+    const { service, repository } = setup();
+    repository.list.mockResolvedValueOnce({ clients: [{ ...profile, status: "inactive" }], next: "cursor" })
+      .mockResolvedValueOnce({ clients: [profile], next: null });
+    expect(await service.directory(admin, "emi", undefined, { status: "active", contact: "phone" })).toEqual({ clients: [profile], next: null });
+    expect(repository.list).toHaveBeenLastCalledWith(admin, "emi", "cursor");
+  });
+  it("bounds sparse scans and returns a resumable cursor", async () => {
+    const { service, repository } = setup();
+    repository.list.mockResolvedValue({ clients: [profile], next: "next" });
+    expect(await service.directory(admin, "", undefined, { status: "all", contact: "missing-phone" })).toEqual({ clients: [], next: "next" });
+    expect(repository.list).toHaveBeenCalledTimes(10);
+  });
+  it("authorizes filtered listing before accessing data", async () => {
+    const { service, repository } = setup();
+    await expect(service.directory({ ...admin, role: "client" })).rejects.toMatchObject({ status: 403 });
+    expect(repository.list).not.toHaveBeenCalled();
+  });
+  it("escapes separators, quotes and spreadsheet formulas in exports", () => {
+    const csv = clientsCsv([{ ...profile, name: '=HYPERLINK("x");test' }]);
+    expect(csv).toContain('"\'=HYPERLINK(""x"");test"');
+    expect(csv).toContain('"\'+213 550 12 34 56"');
+    expect(csv.startsWith("\uFEFF")).toBe(true);
+  });
+});
 describe("client profiles", () => {
   it("normalizes names, accents and formatted phone searches", () => {
     const prefixes = clientSearchPrefixes(input);
