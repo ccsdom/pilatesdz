@@ -42,6 +42,40 @@ beforeAll(async () => {
 });
 afterAll(async () => { if (app) await deleteApp(app); });
 
+it("protects measurements, isolates centers, preserves revisions and rejects competing updates", async () => {
+  const route = "/api/crm/mensurations";
+  const profile = await create({ ...contact, email: "measurements@pilates.test" });
+  const payload = { clientId: profile.id, version: 0, measurement: { day: "2026-01-01", values: { weight: 65.2, waist: 80 } } };
+  const read = (cookie = adminCookie, query = `clientId=${profile.id}`) => fetch(`${origin}${route}?${query}`, { headers: { Cookie: cookie } });
+  expect((await read("")).status).toBe(401);
+  expect((await read(clientCookie)).status).toBe(403);
+  expect((await post(payload, clientCookie, origin, route)).status).toBe(403);
+  expect((await post(payload, adminCookie, "https://evil.test", route)).status).toBe(403);
+  expect((await post({ ...payload, centerId: "oran" }, adminCookie, origin, route)).status).toBe(400);
+  expect((await post({ ...payload, measurement: { ...payload.measurement, values: {} } }, adminCookie, origin, route)).status).toBe(400);
+  const other = "measurement-other-center";
+  await getFirestore(app).doc(`centers/oran/clients/${other}`).set({ id: other, centerId: "oran" });
+  expect((await read(adminCookie, `clientId=${other}`)).status).toBe(404);
+  expect((await post({ ...payload, clientId: other }, adminCookie, origin, route)).status).toBe(404);
+  const created = await post(payload, adminCookie, origin, route);
+  expect(created.status).toBe(200);
+  expect((await created.json()).measurement.version).toBe(1);
+  expect((await post(payload, adminCookie, origin, route)).status).toBe(409);
+  const updates = await Promise.all([64.1, 64.2].map(weight => post({ ...payload, version: 1, measurement: { ...payload.measurement, values: { weight } } }, adminCookie, origin, route)));
+  expect(updates.map(response => response.status).sort()).toEqual([200, 409]);
+  const response = await read(); expect(response.headers.get("cache-control")).toBe("no-store");
+  const page = await response.json(); expect(page.measurements).toHaveLength(1); expect(page.measurements[0].version).toBe(2);
+  const revisions = await getFirestore(app).collection(`centers/alger/clients/${profile.id}/measurements/2026-01-01/revisions`).get();
+  expect(revisions.size).toBe(2); expect(revisions.docs.find(doc => doc.id === "1")?.data().values.weight).toBe(65.2);
+  for (let day = 2; day <= 27; day++) {
+    const date = `2026-01-${String(day).padStart(2, "0")}`;
+    await getFirestore(app).doc(`centers/alger/clients/${profile.id}/measurements/${date}`).set({ ...page.measurements[0], day: date });
+  }
+  const first = await (await read()).json(); expect(first.measurements).toHaveLength(25); expect(first.next).toBe("2026-01-03");
+  const second = await (await read(adminCookie, `clientId=${profile.id}&after=${first.next}`)).json();
+  expect(second.measurements.map((record: { day: string }) => record.day)).toEqual(["2026-01-02", "2026-01-01"]); expect(second.next).toBe(null);
+});
+
 it("protects profile pages and endpoints from anonymous users and clients", async () => {
   expect((await get("", "")).status).toBe(401);
   expect((await get("", clientCookie)).status).toBe(403);

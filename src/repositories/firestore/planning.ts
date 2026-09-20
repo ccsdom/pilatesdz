@@ -199,6 +199,11 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
           return session;
         }
         if (input.startsAt <= now() || input.startsAt > now() + 366 * 86400000) throw new ManagementError(400, "La séance doit commencer dans le futur, au cours des douze prochains mois.");
+        const overlapping = await tx.get(db.collection(`${root(actor)}/sessions`).where("startsAt", ">=", input.startsAt - 180 * 60000).where("startsAt", "<", input.startsAt + input.durationMinutes * 60000).limit(101));
+        if (overlapping.size > 100 || overlapping.docs.some(doc => {
+          const existing = decode(actor, doc.id, doc.data());
+          return existing.startsAt + existing.durationMinutes * 60000 > input.startsAt;
+        })) throw new ManagementError(409, "Un créneau existe déjà sur cet horaire. Ouvrez-le depuis le planning pour gérer ses places.");
         const session: PilatesSession = { ...input, id, centerId: actor.centerId, status: "scheduled", bookedCount: 0 };
         tx.create(ref, { ...session, createdAt: now(), createdBy: actor.uid });
         return session;

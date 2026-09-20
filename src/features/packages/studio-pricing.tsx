@@ -33,7 +33,7 @@ export function StudioPricing() {
               <div>
                 <div className="flex items-center justify-between">
                   <span className="rounded-full bg-[#f4efe6] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#8b652b]">
-                    {offer.id.includes("reformer") ? "Reformer" : "Sol / Mat"}
+                    {offer.id === "discovery" ? "Découverte" : "Séance libre"}
                   </span>
                   <span className="text-xs text-[#8c8275]">1 séance</span>
                 </div>
@@ -117,16 +117,16 @@ export function StudioPricing() {
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-[#706659]">
-                    Règlement unique pour 3 mois complets ({offer.sessionsPerMonth * 3} séances).
+                    Formule de 3 mois ({offer.sessionsPerMonth * 3} séances). Paiement en espèces, avec acomptes possibles.
                   </p>
                 </div>
 
                 <ul className="mt-6 space-y-2.5 text-sm text-[#595146]">
                   <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-[#8b652b]" /> Accès prioritaire au planning 30 jours à l’avance
+                    <Check className="h-4 w-4 text-[#8b652b]" /> Réservation selon les places disponibles
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <Check className="h-4 w-4 text-[#8b652b]" /> Crédits reportables en cas d’annulation anticipée
+                    <Check className="h-4 w-4 text-[#8b652b]" /> Suivi de vos crédits dans votre espace personnel
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check className="h-4 w-4 text-[#8b652b]" /> Suivi personnalisé par nos coachs certifiées
@@ -153,4 +153,3 @@ export function StudioPricing() {
     </section>
   );
 }
-

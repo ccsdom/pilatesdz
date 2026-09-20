@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { SINGLE_SESSION_OFFERS, formatDzd } from "@/domain/models/studio-offers";
 import { BookingDatePicker } from "./booking-date-picker";
 import { bookingCalendarDate, firstBookingDay, initialBookingDay } from "@/domain/models/public-booking-calendar";
 import { 
@@ -44,72 +45,16 @@ export type TimeSlot = {
   status: "available" | "limited" | "full";
 };
 
-const PRACTICES: PracticeType[] = [
-  {
-    id: "reformer-core",
-    name: "Pilates Reformer Core",
-    category: "Signature Reformer",
-    duration: "60 min",
-    intensity: "Modérée à Intense",
-    description: "Renforcement profond sur machine Reformer. Travail complet de la sangle abdominale, posture et tonification.",
-    price: "3 500 DA",
-    badge: "Le plus populaire",
-    iconName: "Reformer"
-  },
-  {
-    id: "reformer-sculpt",
-    name: "Reformer Sculpt & Flow",
-    category: "Sculpting",
-    duration: "60 min",
-    intensity: "Dynamique",
-    description: "Enchaînements fluides et sculptants pour affiner la silhouette et améliorer la souplesse sur machine.",
-    price: "3 500 DA",
-    iconName: "Sparkles"
-  },
-  {
-    id: "mat-accessories",
-    name: "Pilates Mat & Accessoires",
-    category: "Fondations",
-    duration: "60 min",
-    intensity: "Douce à Modérée",
-    description: "Travail au sol avec petits matériels (ring, foam roller, bandes élastiques) pour corriger les déséquilibres.",
-    price: "2 500 DA",
-    iconName: "Layers"
-  },
-  {
-    id: "tower-chair",
-    name: "Pilates Tower & Chair",
-    category: "Équipement Spécialisé",
-    duration: "60 min",
-    intensity: "Intermédiaire",
-    description: "Combinaison de la tour et de la chaise Pilates pour renforcer la colonne et la stabilité des articulations.",
-    price: "3 800 DA",
-    iconName: "Zap"
-  },
-  {
-    id: "essai-decouverte",
-    name: "Séance d'Essai Découverte",
-    category: "Offre Découverte",
-    duration: "60 min",
-    intensity: "Adaptable",
-    description: "Idéal pour votre première séance au studio. Inclus diagnostic postural et initiation au Reformer.",
-    price: "2 000 DA",
-    badge: "Spécial 1ère visite",
-    iconName: "Star"
-  },
-  {
-    id: "cours-particulier",
-    name: "Coaching Privé 1-on-1",
-    category: "Sur Mesure",
-    duration: "60 min",
-    intensity: "Personnalisée",
-    description: "Accompagnement individuel exclusif avec un coach dédié. Programme 100% adapté à vos objectifs.",
-    price: "7 000 DA",
-    badge: "Exclusif",
-    iconName: "Crown"
-  }
-];
-
+const PRACTICES: PracticeType[] = SINGLE_SESSION_OFFERS.map(offer => ({
+  id: offer.id,
+  name: offer.label,
+  category: offer.id === "discovery" ? "Première visite" : "À la séance",
+  duration: "60 min",
+  intensity: "Adaptable",
+  description: "Réservez une place dans un créneau d’une heure, avec quatre personnes maximum.",
+  price: formatDzd(offer.priceDzd),
+  iconName: "Reformer",
+}));
 // Helper to format date string to French display
 function formatDateFr(date: Date): { dayName: string; dayNum: number; monthName: string; fullFr: string; iso: string } {
   const daysFr = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
@@ -130,81 +75,8 @@ function formatDateFr(date: Date): { dayName: string; dayNum: number; monthName:
   };
 }
 
-// Generate schedule slots according to Studio Rules
-function getSlotsForDateAndGender(date: Date, gender: GenderOption): { isOpen: boolean; slots: TimeSlot[]; reason?: string } {
-  const dayOfWeek = date.getUTCDay(); // 0 = Dimanche, 1 = Lundi, ..., 5 = Vendredi, 6 = Samedi
-  const capacity = 4; // Exactly 4 places per slot (Reformer machines count)
-
-  // Vendredi (5) -> Studio Fermé
-  if (dayOfWeek === 5) {
-    return {
-      isOpen: false,
-      slots: [],
-      reason: "Le studio est fermé le vendredi."
-    };
-  }
-
-  let slotTimes: string[] = [];
-
-  // Days: Samedi (6), Lundi (1), Mercredi (3)
-  if (dayOfWeek === 6 || dayOfWeek === 1 || dayOfWeek === 3) {
-    if (gender === "femme") {
-      // Femmes : 10h00 - 14h00
-      slotTimes = ["10:00 - 11:00", "11:00 - 12:00", "12:00 - 13:00", "13:00 - 14:00"];
-    } else {
-      // Hommes : 14h00 - 20h00
-      slotTimes = ["14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00", "18:00 - 19:00", "19:00 - 20:00"];
-    }
-  } 
-  // Days: Dimanche (0), Mardi (2), Jeudi (4)
-  else if (dayOfWeek === 0 || dayOfWeek === 2 || dayOfWeek === 4) {
-    if (gender === "femme") {
-      // Femmes : 10h00 - 18h00
-      slotTimes = [
-        "10:00 - 11:00", 
-        "11:00 - 12:00", 
-        "12:00 - 13:00", 
-        "13:00 - 14:00", 
-        "14:00 - 15:00", 
-        "15:00 - 16:00", 
-        "16:00 - 17:00", 
-        "17:00 - 18:00"
-      ];
-    } else {
-      // Hommes : 18h00 - 20h00
-      slotTimes = ["18:00 - 19:00", "19:00 - 20:00"];
-    }
-  }
-
-  // Generate realistic deterministic capacity for each slot
-  const seedStr = `${date.getUTCFullYear()}-${date.getUTCMonth()}-${date.getUTCDate()}-${gender}`;
-  const slots: TimeSlot[] = slotTimes.map((time, idx) => {
-    // Generate simulated reserved count between 0 and 4
-    const charCodeSum = seedStr.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) + idx * 7;
-    let reserved = (charCodeSum % 4); // 0, 1, 2, or 3
-    if (idx === 1 && charCodeSum % 3 === 0) reserved = 4; // make one slot full occasionally
-    const available = capacity - reserved;
-
-    let status: "available" | "limited" | "full" = "available";
-    if (available === 0) status = "full";
-    else if (available <= 2) status = "limited";
-
-    return {
-      time,
-      totalCapacity: capacity,
-      reserved,
-      available,
-      status
-    };
-  });
-
-  return {
-    isOpen: true,
-    slots
-  };
-}
-
 export function BookingWizard() {
+  const requestRef = useRef<{ body: string; id: string } | null>(null);
   const [step, setStep] = useState<number>(1);
   const [selectedPractice, setSelectedPractice] = useState<PracticeType>(PRACTICES[0]);
   const [gender, setGender] = useState<GenderOption>("femme");
@@ -222,11 +94,28 @@ export function BookingWizard() {
   const [formError, setFormError] = useState("");
   const [bookingReference, setBookingReference] = useState("");
 
-  // Compute current schedule based on selected date & gender
-  const daySchedule = useMemo(() => {
-    return getSlotsForDateAndGender(selectedDate, gender);
-  }, [selectedDate, gender]);
-
+  const day = selectedDate.toISOString().slice(0, 10);
+  const availabilityKey = `${day}/${gender}`;
+  const [availability, setAvailability] = useState<{ key: string; slots: TimeSlot[]; error: string } | null>(null);
+  useEffect(() => {
+    if (step !== 3 && step !== 4) return;
+    const controller = new AbortController();
+    async function refresh() {
+      try {
+        const response = await fetch(`/api/disponibilites?${new URLSearchParams({ day, audience: gender })}`, { cache: "no-store", signal: controller.signal });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Chargement impossible.");
+        if (!controller.signal.aborted) setAvailability({ key: availabilityKey, slots: data.slots, error: "" });
+      } catch (cause) {
+        if (!controller.signal.aborted) setAvailability({ key: availabilityKey, slots: [], error: cause instanceof Error ? cause.message : "Chargement impossible." });
+      }
+    }
+    void refresh();
+    const timer = window.setInterval(() => { if (document.visibilityState === "visible") void refresh(); }, 30000);
+    return () => { controller.abort(); window.clearInterval(timer); };
+  }, [day, gender, availabilityKey, step]);
+  const currentAvailability = availability?.key === availabilityKey ? availability : null;
+  const daySchedule = { isOpen: selectedDate.getUTCDay() !== 5, slots: currentAvailability?.slots ?? [], reason: "Le studio est fermé le vendredi." };
   // Handle Date Selection
   const handleSelectDate = (date: Date) => {
     setSelectedDate(date);
@@ -249,13 +138,17 @@ export function BookingWizard() {
       return;
     }
 
+    if (!daySchedule.slots.some(slot => slot.time === selectedSlot && slot.available > 0)) {
+      setFormError("Ce créneau n’est plus disponible. Revenez au calendrier pour choisir une place.");
+      return;
+    }
     setLoading(true);
 
     try {
       const res = await fetch("/api/reservation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: (() => { const payload = {
           practiceId: selectedPractice.id,
           practiceName: selectedPractice.name,
           gender,
@@ -266,7 +159,7 @@ export function BookingWizard() {
           clientEmail: clientEmail.trim() || undefined,
           clientLevel,
           paymentMethod,
-        }),
+        }; const body = JSON.stringify(payload); if (requestRef.current?.body !== body) requestRef.current = { body, id: crypto.randomUUID() }; return JSON.stringify({ ...payload, requestId: requestRef.current.id }); })(),
       });
 
       const data = await res.json();
@@ -275,7 +168,7 @@ export function BookingWizard() {
         throw new Error(data.error || "Impossible d'enregistrer la réservation.");
       }
 
-      setBookingReference(data.bookingReference || `PIL-2026-${Math.floor(1000 + Math.random() * 9000)}`);
+      setBookingReference(data.bookingReference);
       setStep(5); // Go to Confirmation step
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : "Une erreur est survenue lors de la réservation. Veuillez réessayer.");
@@ -288,13 +181,14 @@ export function BookingWizard() {
 
   return (
     <div className="w-full">
+      {step < 5 && <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#cdae72]/50 bg-white p-5"><p className="text-sm text-[#61574b]">Vous connaissez déjà le studio ? Retrouvez vos réservations et votre forfait.</p><Link href={`/espace-cliente?day=${day}`} className="rounded-full bg-[#1c1917] px-5 py-3 text-xs font-semibold text-white">Me connecter</Link></div>}
       {/* Wizard Progress Header */}
       {step < 5 && (
         <div className="mb-10">
           <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[#786c5e] mb-3">
             <span>Étape {step} sur 4</span>
             <span>
-              {step === 1 && "Choix de la Pratique"}
+              {step === 1 && "Première visite ou séance libre"}
               {step === 2 && "Public & Créneau Horaires"}
               {step === 3 && "Sélection Date & Heure"}
               {step === 4 && "Vos Coordonnées & Validation"}
@@ -315,9 +209,9 @@ export function BookingWizard() {
       {step === 1 && (
         <div className="space-y-8 animate-fadeIn">
           <div>
-            <h2 className="font-serif text-3xl font-light text-[#1c1917]">Sélectionnez votre discipline</h2>
+            <h2 className="font-serif text-3xl font-light text-[#1c1917]">Réservez votre place</h2>
             <p className="mt-2 text-sm text-[#61574b]">
-              Chaque cours dure 60 minutes et se déroule en petit groupe de 4 personnes maximum pour une attention personnalisée.
+              Chaque créneau dure une heure et accueille quatre personnes maximum. Déjà cliente ? Connectez-vous pour réserver avec votre forfait.
             </p>
           </div>
 
@@ -464,7 +358,7 @@ export function BookingWizard() {
           <div className="rounded-2xl border border-[#dccbb0] bg-[#faf7f2] p-5 flex items-start gap-4 text-xs text-[#524b42]">
             <Info className="h-5 w-5 text-[#99702d] shrink-0 mt-0.5" />
             <div>
-              <span className="font-bold text-[#1c1917]">Capacité Garantie de 4 Reformers :</span> Tous les cours sont limités strictement à 4 participant(e)s pour assurer la qualité du guidage postural et un confort optimal. Le studio est fermé tous les vendredis.
+              <span className="font-bold text-[#1c1917]">4 places par heure :</span> Les disponibilités sont partagées avec le planning du studio. Le studio est fermé le vendredi.
             </div>
           </div>
 
@@ -522,7 +416,7 @@ export function BookingWizard() {
               </div>
             </div>
 
-            {!daySchedule.isOpen ? (
+            {!currentAvailability ? <p role="status" className="py-8 text-center text-sm">Chargement des places disponibles…</p> : currentAvailability.error ? <p role="alert" className="py-8 text-center text-sm text-red-700">{currentAvailability.error}</p> : !daySchedule.isOpen ? (
               <div className="py-12 text-center text-[#706659] space-y-3">
                 <CalendarIcon className="h-10 w-10 mx-auto text-[#cdae72]/60" />
                 <p className="text-base font-medium">{daySchedule.reason}</p>
@@ -719,26 +613,10 @@ export function BookingWizard() {
                         onChange={() => setPaymentMethod("studio")}
                         className="accent-[#b7893b]" 
                       />
-                      <span className="text-xs">Règlement au studio (Espèces/CIB)</span>
+                      <span className="text-xs">Règlement au studio (Espèces)</span>
                     </label>
 
-                    <label 
-                      onClick={() => setPaymentMethod("credit")}
-                      className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-all ${
-                        paymentMethod === "credit"
-                          ? "border-[#b7893b] bg-[#faf7f2] font-semibold text-[#1c1917]"
-                          : "border-[#e5dacf] bg-white text-[#61574b]"
-                      }`}
-                    >
-                      <input 
-                        type="radio" 
-                        name="payment" 
-                        checked={paymentMethod === "credit"} 
-                        onChange={() => setPaymentMethod("credit")}
-                        className="accent-[#b7893b]" 
-                      />
-                      <span className="text-xs">Déduire de mon pass / crédit membre</span>
-                    </label>
+                    <Link href="/espace-cliente" className="rounded-2xl border border-[#e5dacf] p-4 text-xs underline">Déjà cliente ? Connectez-vous pour utiliser votre forfait.</Link>
                   </div>
                 </div>
 
@@ -817,7 +695,7 @@ export function BookingWizard() {
 
                 <div className="rounded-2xl bg-white/10 p-4 text-[11px] text-white/70 flex items-start gap-2">
                   <Shield className="h-4 w-4 shrink-0 text-[#e5be78] mt-0.5" />
-                  <span>Annulation gratuite jusqu’à 12 heures avant le début du cours via votre espace cliente ou par téléphone au 05 53 02 17 14.</span>
+                  <span>Pour gérer votre réservation, utilisez votre espace cliente ou contactez le studio au 05 53 02 17 14.</span>
                 </div>
               </div>
             </div>
@@ -843,7 +721,7 @@ export function BookingWizard() {
             </h2>
 
             <p className="mt-3 text-sm text-[#61574b]">
-              Merci <strong className="text-[#1c1917]">{clientName}</strong>. Nous avons bien enregistré votre cours au studio Pilates Center Alger.
+              Merci <strong className="text-[#1c1917]">{clientName}</strong>. Votre place est réservée au studio Pilates Center Alger.
             </p>
           </div>
 
@@ -852,7 +730,7 @@ export function BookingWizard() {
             <div className="flex items-center justify-between border-b border-[#f0e6d8] pb-4">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#99702d]">Code de Réservation</span>
-                <div className="font-mono text-2xl font-bold text-[#1c1917]">{bookingReference}</div>
+                <div className="break-all font-mono text-lg font-bold text-[#1c1917]">{bookingReference}</div>
               </div>
 
               <div className="text-right">

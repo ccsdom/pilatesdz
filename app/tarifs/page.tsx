@@ -2,10 +2,11 @@ import Link from "next/link";
 import { ArrowRight, Sparkles, ShieldCheck, Check, Phone, Menu } from "lucide-react";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { StudioPricing } from "@/features/packages/studio-pricing";
+import { QUARTERLY_DISCOUNT_PERCENT } from "@/domain/models/studio-offers";
 
 export const metadata = {
   title: "Tarifs & Abonnements · Pilates Center Alger",
-  description: "Consultez l'ensemble de nos formules et tarifs : séances à l'unité, cartes de crédits, abonnements mensuels et trimestriels avec remise -15%.",
+  description: `Consultez nos séances à l’unité et nos abonnements mensuels et trimestriels avec une remise de ${QUARTERLY_DISCOUNT_PERCENT} %.`,
 };
 
 export default function TarifsPage() {
@@ -67,7 +68,7 @@ export default function TarifsPage() {
             </h1>
             
             <p className="mt-8 text-lg leading-relaxed text-[#61574b] lg:text-xl">
-              Trouvez la formule idéale adaptée à vos objectifs. Séances à l'unité ou engagements réguliers avec remise trimestrielle de 15%.
+              Trouvez la formule idéale adaptée à vos objectifs. Séances à l’unité ou engagements réguliers avec remise trimestrielle de {QUARTERLY_DISCOUNT_PERCENT} %.
             </p>
           </div>
         </section>
