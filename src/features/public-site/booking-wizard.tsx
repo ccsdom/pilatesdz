@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { BookingDatePicker } from "./booking-date-picker";
+import { bookingCalendarDate, firstBookingDay, initialBookingDay } from "@/domain/models/public-booking-calendar";
 import { 
   Calendar as CalendarIcon, 
   Clock, 
@@ -13,7 +15,6 @@ import {
   Shield, 
   Check, 
   AlertCircle,
-  Phone,
   MapPin,
   Flame,
   Info,
@@ -114,10 +115,10 @@ function formatDateFr(date: Date): { dayName: string; dayNum: number; monthName:
   const daysFr = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
   const monthsFr = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
   
-  const dayName = daysFr[date.getDay()];
-  const dayNum = date.getDate();
-  const monthName = monthsFr[date.getMonth()];
-  const year = date.getFullYear();
+  const dayName = daysFr[date.getUTCDay()];
+  const dayNum = date.getUTCDate();
+  const monthName = monthsFr[date.getUTCMonth()];
+  const year = date.getUTCFullYear();
   const iso = date.toISOString().split("T")[0];
 
   return {
@@ -131,7 +132,7 @@ function formatDateFr(date: Date): { dayName: string; dayNum: number; monthName:
 
 // Generate schedule slots according to Studio Rules
 function getSlotsForDateAndGender(date: Date, gender: GenderOption): { isOpen: boolean; slots: TimeSlot[]; reason?: string } {
-  const dayOfWeek = date.getDay(); // 0 = Dimanche, 1 = Lundi, ..., 5 = Vendredi, 6 = Samedi
+  const dayOfWeek = date.getUTCDay(); // 0 = Dimanche, 1 = Lundi, ..., 5 = Vendredi, 6 = Samedi
   const capacity = 4; // Exactly 4 places per slot (Reformer machines count)
 
   // Vendredi (5) -> Studio Fermé
@@ -176,7 +177,7 @@ function getSlotsForDateAndGender(date: Date, gender: GenderOption): { isOpen: b
   }
 
   // Generate realistic deterministic capacity for each slot
-  const seedStr = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${gender}`;
+  const seedStr = `${date.getUTCFullYear()}-${date.getUTCMonth()}-${date.getUTCDate()}-${gender}`;
   const slots: TimeSlot[] = slotTimes.map((time, idx) => {
     // Generate simulated reserved count between 0 and 4
     const charCodeSum = seedStr.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) + idx * 7;
@@ -208,16 +209,8 @@ export function BookingWizard() {
   const [selectedPractice, setSelectedPractice] = useState<PracticeType>(PRACTICES[0]);
   const [gender, setGender] = useState<GenderOption>("femme");
   
-  // Date state: default to tomorrow or next open day
-  const today = useMemo(() => new Date(), []);
-  const initialDate = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1); // Start tomorrow
-    if (d.getDay() === 5) d.setDate(d.getDate() + 1); // skip Friday if tomorrow is Friday
-    return d;
-  }, []);
-
-  const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
+  const [minimumDay] = useState(() => firstBookingDay(Date.now()));
+  const [selectedDate, setSelectedDate] = useState<Date>(() => bookingCalendarDate(initialBookingDay(minimumDay)));
   const [selectedSlot, setSelectedSlot] = useState<string>("");
 
   // Client Details Form State
@@ -228,18 +221,6 @@ export function BookingWizard() {
   const [paymentMethod, setPaymentMethod] = useState<"studio" | "credit">("studio");
   const [formError, setFormError] = useState("");
   const [bookingReference, setBookingReference] = useState("");
-
-  // Upcoming 14 days for date picker
-  const availableDates = useMemo(() => {
-    const dates: Date[] = [];
-    const start = new Date();
-    for (let i = 1; i <= 14; i++) {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      dates.push(d);
-    }
-    return dates;
-  }, []);
 
   // Compute current schedule based on selected date & gender
   const daySchedule = useMemo(() => {
@@ -296,8 +277,8 @@ export function BookingWizard() {
 
       setBookingReference(data.bookingReference || `PIL-2026-${Math.floor(1000 + Math.random() * 9000)}`);
       setStep(5); // Go to Confirmation step
-    } catch (err: any) {
-      setFormError(err.message || "Une erreur est survenue lors de la réservation. Veuillez réessayer.");
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Une erreur est survenue lors de la réservation. Veuillez réessayer.");
     } finally {
       setLoading(false);
     }
@@ -502,7 +483,7 @@ export function BookingWizard() {
               onClick={() => setStep(3)}
               className="inline-flex items-center gap-2 rounded-full bg-[#1c1917] px-8 py-4 text-sm font-semibold text-white transition-all hover:bg-[#b7893b] hover:text-black shadow-lg"
             >
-              <span>Choisir la Date & l'Heure</span>
+              <span>Choisir la Date & l&apos;Heure</span>
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
@@ -513,54 +494,13 @@ export function BookingWizard() {
       {step === 3 && (
         <div className="space-y-8 animate-fadeIn">
           <div>
-            <h2 className="font-serif text-3xl font-light text-[#1c1917]">Choisissez la date et l'heure</h2>
+            <h2 className="font-serif text-3xl font-light text-[#1c1917]">Choisissez la date et l&apos;heure</h2>
             <p className="mt-2 text-sm text-[#61574b]">
               Créneaux affichés pour : <strong className="text-[#99702d] uppercase">{gender === "femme" ? "Femmes" : "Hommes"}</strong> • Discipline : <strong>{selectedPractice.name}</strong>
             </p>
           </div>
 
-          {/* Date Horizontal Carousel Picker */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#786c5e] mb-3">
-              1. Sélectionnez le jour de votre séance
-            </label>
-            
-            <div className="flex gap-3 overflow-x-auto pb-4 pt-1 scrollbar-thin">
-              {availableDates.map((date) => {
-                const dateFr = formatDateFr(date);
-                const isSelected = date.toDateString() === selectedDate.toDateString();
-                const isFriday = date.getDay() === 5;
-
-                return (
-                  <button
-                    key={dateFr.iso}
-                    type="button"
-                    onClick={() => !isFriday && handleSelectDate(date)}
-                    disabled={isFriday}
-                    className={`flex shrink-0 flex-col items-center justify-center rounded-2xl border px-5 py-4 min-w-[95px] transition-all ${
-                      isFriday
-                        ? "border-dashed border-[#e5dacf] bg-[#faf7f2] opacity-50 cursor-not-allowed text-[#a89d8f]"
-                        : isSelected
-                        ? "border-[#b7893b] bg-[#1c1917] text-white shadow-lg"
-                        : "border-[#e5dacf] bg-white text-[#1c1917] hover:border-[#cdae72] hover:bg-[#faf7f2]"
-                    }`}
-                  >
-                    <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                      isSelected ? "text-[#e5be78]" : "text-[#99702d]"
-                    }`}>
-                      {dateFr.dayName.slice(0, 3)}
-                    </span>
-                    <span className="my-1 font-serif text-2xl font-semibold">
-                      {dateFr.dayNum}
-                    </span>
-                    <span className="text-[10px] opacity-75">
-                      {isFriday ? "Fermé" : dateFr.monthName.slice(0, 4)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <BookingDatePicker value={selectedDateFr.iso} minimum={minimumDay} onChange={day => handleSelectDate(bookingCalendarDate(day))} />
 
           {/* Time Slots Grid */}
           <div className="rounded-3xl border border-[#e5dacf] bg-white p-6 sm:p-8 shadow-sm">
@@ -951,7 +891,7 @@ export function BookingWizard() {
                 <span>Centre Commercial Zemzem, Bir Mourad Raïs</span>
               </div>
               <p className="text-[11px] text-[#706659] pl-6">
-                Pensez à arriver 10 minutes avant le début de votre séance muni(e) d'une tenue de sport confortable et de chaussettes antidérapantes.
+                Pensez à arriver 10 minutes avant le début de votre séance muni(e) d&apos;une tenue de sport confortable et de chaussettes antidérapantes.
               </p>
             </div>
           </div>
@@ -961,7 +901,7 @@ export function BookingWizard() {
               href="/"
               className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border border-[#cdae72]/60 px-8 py-3.5 text-xs font-semibold text-[#1c1917] hover:bg-white"
             >
-              <span>Retour à l'accueil</span>
+              <span>Retour à l&apos;accueil</span>
             </Link>
 
             <Link
