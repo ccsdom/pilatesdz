@@ -1,7 +1,15 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { CookieBanner } from "@/components/ui/cookie-banner";
 import { ThemeProvider } from "@/components/theme-provider";
+
+export const viewport: Viewport = {
+  themeColor: "#faf7f2",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "Pilates Center Alger · Sculptfit Studio",
