@@ -9,6 +9,7 @@ import { SINGLE_SESSION_OFFERS } from "@/domain/models/studio-offers";
 import { publicDayQuery, readSlotOccupancy } from "@/repositories/firestore/public-availability";
 import { isTrustedMutation, readLimitedBody } from "@/lib/auth/request-policy";
 import { ManagementError } from "@/domain/ports/access-management";
+import { getAccountProvisioner } from "@/lib/auth/access-management";
 
 export const runtime = "nodejs";
 const input = z.object({
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
       const previous = (await tx.get(receipt)).data();
       if (previous) {
         if (previous.fingerprint !== fingerprint) throw new ManagementError(409, "Cette demande a déjà été utilisée. Actualisez la page.");
-        return { bookingReference: previous.reference as string, reservationId: receipt.id };
+        return { bookingReference: previous.reference as string, reservationId: receipt.id, email: null, name: null, uid: null };
       }
       const claim = await tx.get(identity);
       const emailIdentity = emailClaim ? await tx.get(emailClaim) : null;
@@ -67,7 +68,9 @@ export async function POST(request: NextRequest) {
       const available = slotAvailability(selected, occupancy, Date.now());
       if (available.available < 1) throw new ManagementError(409, "Ce créneau n’est plus disponible. Choisissez un autre horaire.");
       const profile = { name: data.clientName, email: data.clientEmail ?? `${normalizedPhone}@temp.pilates.dz`, phone: normalizedPhone, status: "active" as const };
-      tx.create(clientRef, { ...profile, id: clientRef.id, centerId, authUid: null, invitationUid: null, version: 1, createdAt: now, updatedAt: now, searchPrefixes: clientSearchPrefixes(profile) });
+      const invitationUid = `pc_${createHash("sha256").update(`${centerId}/${clientRef.id}`).digest("hex")}`;
+      tx.create(clientRef, { ...profile, id: clientRef.id, centerId, authUid: invitationUid, invitationUid: null, version: 1, createdAt: now, updatedAt: now, searchPrefixes: clientSearchPrefixes(profile) });
+      tx.create(root.collection("members").doc(invitationUid), { uid: invitationUid, clientId: clientRef.id, centerId, role: "client", active: true, email: profile.email, name: profile.name, createdAt: now, createdBy: "online_booking" });
       tx.create(identity, { clientId: clientRef.id, createdAt: now });
       if (emailClaim) tx.create(emailClaim, { clientId: clientRef.id, createdAt: now });
       if (occupancy.some(item => item.id === selected.id)) tx.update(sessionRef, { bookedCount: available.reserved + 1, updatedAt: now });
@@ -75,9 +78,19 @@ export async function POST(request: NextRequest) {
       tx.create(sessionRef.collection("bookings").doc(clientRef.id), { sessionId: selected.id, centerId, clientId: clientRef.id, status: "confirmed", bookedAt: now, updatedAt: now, updatedBy: "online_booking", attendance: { status: "unmarked", version: 1 } });
       const reference = `PIL-${data.date.slice(0, 4)}-${data.requestId.toUpperCase()}`;
       tx.create(receipt, { id: receipt.id, fingerprint, reference, centerId, clientId: clientRef.id, clientName: data.clientName, clientPhone: normalizedPhone, clientEmail: data.clientEmail ?? null, clientLevel: data.clientLevel, practiceId: offer.id, practiceName: offer.label, priceDzd: offer.priceDzd, gender: data.gender, date: data.date, slot: selected.time, sessionId: selected.id, paymentMethod: "studio", status: "confirmed", createdAt: now, updatedAt: now, source: "website_online_booking" });
-      return { bookingReference: reference, reservationId: receipt.id };
+      return { bookingReference: reference, reservationId: receipt.id, email: profile.email, name: profile.name, uid: invitationUid };
     });
-    return json({ success: true, ...result }, 201);
+
+    let invitationUrl: string | null = null;
+    if (result.email && result.name && result.uid) {
+      try {
+        const provisioner = getAccountProvisioner();
+        await provisioner.create(result.email, result.name, result.uid);
+        invitationUrl = await provisioner.invitation(result.email);
+      } catch { /* if auth account creation encounters existing record, keep reservation confirmed */ }
+    }
+
+    return json({ success: true, bookingReference: result.bookingReference, reservationId: result.reservationId, invitationUrl }, 201);
   } catch (error) {
     if (error instanceof ManagementError) return json({ error: error.message }, error.status);
     return json({ error: "Réservation non confirmée. Réessayez avec les mêmes informations ou contactez le studio." }, 503);

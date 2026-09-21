@@ -19,7 +19,8 @@ import {
   MapPin,
   Flame,
   Info,
-  Loader2
+  Loader2,
+  KeyRound
 } from "lucide-react";
 
 // Types
@@ -93,6 +94,7 @@ export function BookingWizard() {
   const [paymentMethod, setPaymentMethod] = useState<"studio" | "credit">("studio");
   const [formError, setFormError] = useState("");
   const [bookingReference, setBookingReference] = useState("");
+  const [invitationUrl, setInvitationUrl] = useState<string | null>(null);
 
   const day = selectedDate.toISOString().slice(0, 10);
   const availabilityKey = `${day}/${gender}`;
@@ -169,6 +171,7 @@ export function BookingWizard() {
       }
 
       setBookingReference(data.bookingReference);
+      if (typeof data.invitationUrl === "string") setInvitationUrl(data.invitationUrl);
       setStep(5); // Go to Confirmation step
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : "Une erreur est survenue lors de la réservation. Veuillez réessayer.");
@@ -771,6 +774,30 @@ export function BookingWizard() {
               <p className="text-[11px] text-[#706659] pl-6">
                 Pensez à arriver 10 minutes avant le début de votre séance muni(e) d&apos;une tenue de sport confortable et de chaussettes antidérapantes.
               </p>
+            </div>
+
+            {/* Account Creation & Password Setup Card */}
+            <div className="rounded-2xl border border-[#b7893b]/40 bg-[#faf6ef] p-5 text-xs space-y-3">
+              <div className="flex items-center gap-2 font-bold text-[#99702d] text-sm">
+                <KeyRound className="h-4.5 w-4.5 text-[#b7893b]" />
+                <span>Activer votre espace cliente</span>
+              </div>
+              <p className="text-[#61574b] leading-relaxed">
+                Un compte client a été automatiquement créé avec votre adresse e-mail {clientEmail ? <strong>({clientEmail})</strong> : null}. Définissez votre mot de passe pour gérer vos cours et vos forfaits.
+              </p>
+              {invitationUrl ? (
+                <a
+                  href={invitationUrl}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#b7893b] px-5 py-2.5 text-xs font-bold text-black hover:bg-[#d5ae65] transition-all shadow-sm"
+                >
+                  <span>Créer mon mot de passe</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </a>
+              ) : (
+                <p className="text-[11px] font-medium text-[#8b652b]">
+                  Un e-mail de réinitialisation vous a été transmis. Vous pouvez également cliquer sur &quot;Mot de passe oublié&quot; depuis la page de connexion.
+                </p>
+              )}
             </div>
           </div>
 

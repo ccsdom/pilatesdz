@@ -40,7 +40,14 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) return json({ error: "Vérifiez les informations de la fiche." }, 400);
     const service = getClientService();
     const data = parsed.data;
-    if (data.action === "create") return json({ profile: await service.create(actor, data.profile) }, 201);
+    if (data.action === "create") {
+      const profile = await service.create(actor, data.profile);
+      let invitationResult: { uid: string; invitationUrl: string | null; emailAccepted: boolean } | null = null;
+      try {
+        invitationResult = await service.invite(actor, profile.id);
+      } catch { /* s'il existe déjà un compte ou en cas d'erreur réseau, conserver la création */ }
+      return json({ profile, invitationUrl: invitationResult?.invitationUrl ?? null, emailAccepted: invitationResult?.emailAccepted ?? false }, 201);
+    }
     if (data.action === "update") return json({ profile: await service.update(actor, data.id, data.version, data.profile) });
     return json(await service.invite(actor, data.id));
   } catch (error) { return failure(error); }

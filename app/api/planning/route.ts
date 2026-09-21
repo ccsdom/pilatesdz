@@ -8,6 +8,8 @@ import { clientIdSchema } from "@/domain/models/client";
 import { sessionInputSchema, studioDay } from "@/domain/models/planning";
 import { ManagementError } from "@/domain/ports/access-management";
 
+import { getClientService } from "@/lib/clients/server";
+
 export const runtime = "nodejs";
 const input = z.discriminatedUnion("action", [
   z.object({ action: z.literal("create"), requestId: z.string().uuid(), session: sessionInputSchema }).strict(),
@@ -39,7 +41,19 @@ export async function POST(request: NextRequest) {
     const service = getPlanningService();
     if (data.action === "create") return json({ session: await service.create(actor, data.requestId, data.session) }, 201);
     if (data.action === "book") await service.book(actor, data.id);
-    if (data.action === "book-client") await service.bookForClient(actor, data.id, data.clientId);
+    if (data.action === "book-client") {
+      await service.bookForClient(actor, data.id, data.clientId);
+      let invitationUrl: string | null = null;
+      try {
+        const clientService = getClientService();
+        const details = await clientService.get(actor, data.clientId);
+        if (details.access === "none" || details.access === "pending") {
+          const inviteRes = await clientService.invite(actor, data.clientId);
+          invitationUrl = inviteRes.invitationUrl;
+        }
+      } catch { /* au besoin conserver l'inscription même si l'invitation échoue */ }
+      return json({ success: true, invitationUrl });
+    }
     if (data.action === "cancel-booking") await service.cancelBooking(actor, data.id, data.clientId);
     if (data.action === "cancel-session") await service.cancelSession(actor, data.id);
     return json({ success: true });
