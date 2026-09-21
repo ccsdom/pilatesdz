@@ -285,10 +285,10 @@ export function PublicSite() {
                 <div className="relative h-[480px] w-full overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
                   <Image
                     src="/brand/studio-atmosphere.jpg"
-                    alt="Atmosphère du studio Pilates Center à Bir Mourad Raïs"
+                    alt="Séance de Pilates Reformer au studio Pilates Center à Bir Mourad Raïs"
                     fill
                     sizes="(min-width: 1024px) 50vw, 100vw"
-                    className="object-cover transition-transform duration-700 hover:scale-105"
+                    className="object-cover object-top transition-transform duration-700 hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#141210] via-transparent to-transparent" />
                   <div className="absolute bottom-6 left-6 right-6 rounded-2xl border border-white/15 bg-black/40 p-5 backdrop-blur-md">
