@@ -21,6 +21,7 @@ export const measurementInputSchema = z.object({ day: measurementDaySchema, valu
 export type MeasurementInput = z.infer<typeof measurementInputSchema>;
 export type Measurement = MeasurementInput & { centerId: string; clientId: string; version: number; createdAt: number; updatedAt: number; createdBy: string; updatedBy: string };
 export type MeasurementPage = { measurements: Measurement[]; next: string | null };
+export type PersonalMeasurementPage = { measurements: MeasurementInput[]; next: string | null };
 export function isMeasurementDayAllowed(day: string, now = Date.now()) { return measurementDaySchema.safeParse(day).success && day <= studioDay(now); }
 export function measurementEvolution(records: Measurement[], key: MeasurementKey) {
   const points = records.filter(r => r.values[key] !== undefined).sort((a, b) => a.day.localeCompare(b.day));

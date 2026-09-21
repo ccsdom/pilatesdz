@@ -34,5 +34,11 @@ env:
   - variable: CENTER_ID
     value: "alger"
 
+  - variable: CREDIT_WORKER_AUDIENCE
+    value: "https://www.pilatesdz.com/api/internal/credits"
+
+  - variable: CREDIT_WORKER_SERVICE_ACCOUNT
+    value: "credit-settlement@pilates-center-9dee6.iam.gserviceaccount.com"
+
   - variable: APP_ORIGIN
     value: "https://pilatesdz.com"

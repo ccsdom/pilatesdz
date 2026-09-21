@@ -8,7 +8,7 @@ export const packageInputSchema = z.object({
   expiresAt: z.number().int().positive(),
 }).strict().refine((value) => value.expiresAt > value.validFrom && value.expiresAt - value.validFrom <= 366 * 86400000, "Validité maximale : 366 jours.");
 export type PackageInput = z.infer<typeof packageInputSchema>;
-export type CreditPackage = PackageInput & { id: string; centerId: string; clientId: string; remaining: number; assignedAt: number };
+export type CreditPackage = PackageInput & { id: string; centerId: string; clientId: string; remaining: number; reserved?: number; assignedAt: number };
 export type PackagePage = { packages: CreditPackage[]; next: string | null; clientId: string };
 export function packageDates(first: string, last: string) { return { validFrom: dayRange(first).start, expiresAt: dayRange(last).end }; }
 export function canUsePackage(pack: CreditPackage, startsAt: number) { return pack.remaining > 0 && pack.validFrom <= startsAt && startsAt < pack.expiresAt; }

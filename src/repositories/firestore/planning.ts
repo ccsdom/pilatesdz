@@ -8,6 +8,7 @@ import { ManagementError } from "@/domain/ports/access-management";
 import type { PlanningRepository } from "@/domain/ports/planning";
 import { selectPackage } from "@/domain/models/package";
 import { decodePackage } from "./packages";
+import { creditStatus, creditTransition } from "@/domain/models/credit-settlement";
 
 export function planningRepository(db: Firestore, now = Date.now): PlanningRepository {
   function root(actor: Access) {
@@ -45,9 +46,13 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
     const ref = profileRef(actor, clientId).collection("packages").doc(safeId(booking.creditPackageId));
     const pack = decodePackage(actor.centerId, clientId, ref.id, (await tx.get(ref)).data());
     if (pack.remaining >= pack.credits || !Number.isSafeInteger(booking.creditRevision) || booking.creditRevision < 1) throw new Error("Invalid credit refund");
+    const current = creditStatus(booking)!;
+    const balance = creditTransition(pack, current.state, "refunded");
     return () => {
-      tx.update(ref, { remaining: pack.remaining + 1 });
-      tx.create(ref.collection("movements").doc(`${sessionId}_${booking.creditRevision}_refund`), { delta: 1, reason: "cancellation", sessionId, at: now(), actorUid: actor.uid });
+      tx.update(ref, { remaining: balance.remaining, reserved: balance.reserved });
+      tx.delete(db.doc(`${root(actor)}/automaticCreditJobs/${sessionId}_${clientId}`));
+      tx.delete(db.doc(`${root(actor)}/pendingCreditDecisions/${sessionId}_${clientId}`));
+      tx.create(ref.collection("movements").doc(`${sessionId}_${booking.creditRevision}_refund`), { delta: 1, reservedDelta: balance.reserved - (pack.reserved ?? 0), reason: "cancellation", sessionId, at: now(), actorUid: actor.uid });
     };
   }
   return {
@@ -231,7 +236,7 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
         const person = await identity(tx, actor);
         const session = decode(actor, id, (await tx.get(sessionRef(actor, id))).data());
         const myBooking = person.clientId ? bookingStatus(session, person.clientId, (await tx.get(bookingRef(actor, id, person.clientId))).data()) : "none";
-        const attendees: { clientId: string; name: string; attendance: Attendance }[] = [];
+        const attendees: { clientId: string; name: string; attendance: Attendance; credit: ReturnType<typeof creditStatus> }[] = [];
         if (actor.role === "admin") {
           const bookings = await tx.get(sessionRef(actor, id).collection("bookings").where("status", "==", "confirmed").limit(31));
           if (bookings.size > session.capacity) throw new Error("Invalid occupancy");
@@ -239,7 +244,7 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
             bookingStatus(session, doc.id, doc.data());
             const profile = (await tx.get(profileRef(actor, doc.id))).data();
             if (!profile || profile.id !== doc.id || profile.centerId !== actor.centerId || typeof profile.name !== "string") throw new Error("Invalid attendee");
-            attendees.push({ clientId: doc.id, name: profile.name, attendance: readAttendance(doc.data().attendance) });
+            attendees.push({ clientId: doc.id, name: profile.name, attendance: readAttendance(doc.data().attendance), credit: creditStatus(doc.data()) });
           }
         }
         return { session, myBooking, attendees };
@@ -266,6 +271,9 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
         const status = bookingStatus(session, person.clientId, previous);
         if (status === "confirmed") return; // Retrying a confirmed reservation never consumes another place.
         if (session.bookedCount >= session.capacity) throw new ManagementError(409, "Cette séance est complète.");
+        const policy = (await tx.get(db.doc(`${root(actor)}/settings/credits`))).data();
+        const settlementMode = policy?.mode ?? "manual";
+        if (!["manual", "automatic"].includes(settlementMode)) throw new Error("Invalid settlement mode");
         const available = await tx.get(profileRef(actor, person.clientId).collection("packages").where("expiresAt", ">", session.startsAt).orderBy("expiresAt").limit(101));
         if (available.size > 100) throw new ManagementError(409, "Le centre doit vérifier vos forfaits avant cette réservation.");
         const pack = selectPackage(available.docs.map((doc) => decodePackage(actor.centerId, person.clientId!, doc.id, doc.data())), session.startsAt);
@@ -273,9 +281,11 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
         const creditRevision = (previous?.creditRevision ?? 0) + 1;
         if (!Number.isSafeInteger(creditRevision) || creditRevision < 1) throw new Error("Invalid booking revision");
         const creditRef = profileRef(actor, person.clientId).collection("packages").doc(pack.id);
-        tx.update(creditRef, { remaining: pack.remaining - 1 });
-        tx.create(creditRef.collection("movements").doc(`${id}_${creditRevision}_debit`), { delta: -1, reason: "booking", sessionId: id, at: now(), actorUid: actor.uid });
-        tx.set(booking, { sessionId: id, centerId: actor.centerId, clientId: person.clientId, status: "confirmed", bookedAt: now(), updatedAt: now(), updatedBy: actor.uid, creditPackageId: pack.id, creditRevision, creditRefunded: false });
+        tx.update(creditRef, { remaining: pack.remaining - 1, reserved: (pack.reserved ?? 0) + 1 });
+        tx.create(creditRef.collection("movements").doc(`${id}_${creditRevision}_debit`), { delta: -1, reservedDelta: 1, reason: "booking", sessionId: id, at: now(), actorUid: actor.uid });
+        tx.set(booking, { sessionId: id, centerId: actor.centerId, clientId: person.clientId, status: "confirmed", bookedAt: now(), updatedAt: now(), updatedBy: actor.uid, creditPackageId: pack.id, creditRevision, creditRefunded: false, creditState: "reserved", creditDecisionVersion: 0, settlementMode });
+        tx.set(db.doc(`${root(actor)}/pendingCreditDecisions/${id}_${person.clientId}`), { sessionId: id, clientId: person.clientId, endsAt: session.startsAt + session.durationMinutes * 60000 });
+        if (settlementMode === "automatic") tx.set(db.doc(`${root(actor)}/automaticCreditJobs/${id}_${person.clientId}`), { sessionId: id, clientId: person.clientId, dueAt: session.startsAt + session.durationMinutes * 60000 });
         tx.update(ref, { bookedCount: session.bookedCount + 1 });
       });
     },
@@ -295,7 +305,7 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
         if (session.bookedCount < 1) throw new Error("Invalid occupancy");
         const refund = await prepareRefund(tx, actor, id, clientId, previous!);
         refund();
-        tx.update(booking, { status: "cancelled", updatedAt: now(), updatedBy: actor.uid, creditRefunded: true });
+        tx.update(booking, { status: "cancelled", updatedAt: now(), updatedBy: actor.uid, creditRefunded: true, ...(previous?.creditPackageId ? { creditState: "refunded" } : {}) });
         tx.update(ref, { bookedCount: session.bookedCount - 1 });
       });
     },
@@ -315,7 +325,7 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
         }
         // Read every package before any write; capacity bounds this atomic refund to 30 clients.
         refunds.forEach((refund) => refund());
-        bookings.docs.forEach((doc) => tx.update(doc.ref, { creditRefunded: true, updatedAt: now(), updatedBy: actor.uid }));
+        bookings.docs.forEach((doc) => tx.update(doc.ref, { creditRefunded: true, ...(doc.data().creditPackageId ? { creditState: "refunded" } : {}), updatedAt: now(), updatedBy: actor.uid }));
         tx.update(ref, { status: "cancelled", bookedCount: 0, cancelledAt: now(), cancelledBy: actor.uid });
       });
     },

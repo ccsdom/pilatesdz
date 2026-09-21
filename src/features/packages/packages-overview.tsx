@@ -10,6 +10,7 @@ export function PackagesOverview({ page, q, after }: { page: ClientPage; q: stri
   return <>
     <FinanceHero title="Forfaits & abonnements" description="Accompagnez chaque cliente : attribuez son forfait, suivez ses crédits et retrouvez ses encaissements." icon={WalletCards}>
       <FinanceAction href="#clients">Gérer le forfait d’une cliente</FinanceAction><FinanceAction href="/crm/forfaits/suivi">Échéances et crédits faibles</FinanceAction>
+      <FinanceAction href="/crm/forfaits/validation">Valider les séances et choisir le mode</FinanceAction>
     </FinanceHero>
     <section aria-labelledby="offers-title" className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3"><div><p className={`mb-1 text-[10px] uppercase tracking-[0.2em] ${muted}`}>Le catalogue du centre</p><h2 id="offers-title" className="font-serif text-2xl">À chaque rythme, son forfait</h2></div><p className={`flex items-center gap-2 text-xs ${muted}`}><Clock size={14} />{COURSE_DURATION_MINUTES} min<UsersRound size={14} className="ml-2" />{COURSE_MAX_CAPACITY} personnes maximum</p></div>

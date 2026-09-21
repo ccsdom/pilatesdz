@@ -10,7 +10,9 @@ export function decodePackage(centerId: string, clientId: string, id: string, da
   if (!data) throw new Error("Missing credit package");
   const parsed = packageInputSchema.safeParse({ label: data.label, credits: data.credits, validFrom: data.validFrom, expiresAt: data.expiresAt });
   if (!parsed.success || data.id !== id || data.centerId !== centerId || data.clientId !== clientId || !Number.isSafeInteger(data.remaining) || data.remaining < 0 || data.remaining > data.credits || !Number.isSafeInteger(data.assignedAt)) throw new Error("Invalid credit package");
-  return { ...parsed.data, id, centerId, clientId, remaining: data.remaining, assignedAt: data.assignedAt };
+  const reserved = data.reserved ?? 0;
+  if (!Number.isSafeInteger(reserved) || reserved < 0 || reserved + data.remaining > data.credits) throw new Error("Invalid reserved credits");
+  return { ...parsed.data, id, centerId, clientId, remaining: data.remaining, reserved, assignedAt: data.assignedAt };
 }
 export function packagesRepository(db: Firestore, now = Date.now): PackageRepository {
   return {

@@ -93,7 +93,7 @@ export type PilatesSession = SessionInput & { id: string; centerId: string; stat
 export type BookingStatus = "none" | "confirmed" | "cancelled" | "session-cancelled";
 export type SessionView = { session: PilatesSession; myBooking: BookingStatus };
 export type PlanningPage = { sessions: SessionView[]; next: string | null; day: string };
-export type SessionDetails = SessionView & { attendees: { clientId: string; name: string; attendance: Attendance }[] };
+export type SessionDetails = SessionView & { attendees: { clientId: string; name: string; attendance: Attendance; credit?: import("./credit-settlement").CreditStatus | null }[] };
 export type ReservationRecord = {
   id: string;
   sessionId: string;
