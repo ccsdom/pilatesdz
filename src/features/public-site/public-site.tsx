@@ -282,7 +282,7 @@ export function PublicSite() {
               
               {/* Studio Visual Atmosphere */}
               <div className="relative lg:col-span-6">
-                <div className="relative h-[480px] w-full overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
+                <div className="relative h-[540px] sm:h-[620px] lg:h-[680px] w-full overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
                   <Image
                     src="/brand/studio-atmosphere.jpg"
                     alt="Séance de Pilates Reformer au studio Pilates Center à Bir Mourad Raïs"
