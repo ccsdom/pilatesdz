@@ -37,26 +37,49 @@ export function PublicHeader() {
   }, [mobileMenuOpen]);
 
   const navLinks = [
-    { href: "/studio", label: "Le Studio", active: pathname === "/studio" || pathname === "/le-studio" },
-    { href: "/pratiques", label: "Nos Pratiques", active: pathname === "/pratiques" || pathname === "/nos-pratiques" },
-    { href: "/horaires", label: "Horaires", active: pathname === "/horaires" },
+    { href: "/le-studio", label: "Le Studio", active: pathname === "/le-studio" || pathname === "/studio" },
+    { href: "/les-cours", label: "Les Cours", active: pathname === "/les-cours" || pathname === "/pratiques" || pathname === "/nos-pratiques" },
     { href: "/tarifs", label: "Tarifs", active: pathname === "/tarifs" },
     { href: "/contact", label: "Contact", active: pathname === "/contact" },
   ];
 
   return (
     <>
+      {/* Top Luxury Bar */}
+      <div className="hidden border-b border-[#e7dac8]/40 bg-[#1c1917] px-6 py-2 text-xs text-[#d5ae65] sm:block">
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
+          <div className="flex items-center gap-6 text-white/80">
+            <span className="flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5 text-[#b7893b]" />
+              Centre Commercial Zemzem, Bir Mourad Raïs · Alger
+            </span>
+            <span className="text-white/30">•</span>
+            <span className="text-[#e5be78]">Samedi au Jeudi : 09h00 - 19h30</span>
+          </div>
+
+          <div className="flex items-center gap-5">
+            <a href="tel:0553021714" className="flex items-center gap-1.5 font-medium text-[#e5be78] hover:text-white transition-colors">
+              <Phone className="h-3.5 w-3.5" /> 05 53 02 17 14
+            </a>
+            <span className="text-white/30">•</span>
+            <Link href="/connexion" className="flex items-center gap-1 text-white/90 hover:text-[#e5be78] transition-colors">
+              <User className="h-3.5 w-3.5 text-[#b7893b]" /> Espace Cliente
+            </Link>
+          </div>
+        </div>
+      </div>
+
       <header className="sticky top-0 z-50 border-b border-[#e7dac8]/60 bg-[#faf7f2]/90 backdrop-blur-xl transition-all duration-300">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 sm:px-6 lg:px-10">
           <BrandLockup compact />
 
           {/* Desktop Navigation */}
-          <nav aria-label="Navigation principale" className="hidden items-center gap-8 text-xs font-medium uppercase tracking-[0.2em] text-[#524b42] lg:flex">
+          <nav aria-label="Navigation principale" className="hidden items-center gap-9 text-xs font-medium uppercase tracking-[0.2em] text-[#524b42] lg:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`transition-colors hover:text-[#99702d] ${link.active ? "text-[#99702d] font-semibold" : ""}`}
+                className={`transition-colors hover:text-[#99702d] ${link.active ? "text-[#99702d] font-bold border-b-2 border-[#b7893b] pb-0.5" : ""}`}
               >
                 {link.label}
               </Link>
@@ -67,7 +90,7 @@ export function PublicHeader() {
           <div className="flex items-center gap-2.5 sm:gap-3">
             <a
               href="tel:0553021714"
-              className="hidden items-center gap-2 rounded-full border border-[#cdae72]/50 bg-white/60 px-3.5 py-2 text-xs font-semibold tracking-wider text-[#38322a] transition-all hover:bg-[#f3e6d3] sm:inline-flex"
+              className="hidden items-center gap-2 rounded-full border border-[#cdae72]/50 bg-white/60 px-3.5 py-2 text-xs font-semibold tracking-wider text-[#38322a] transition-all hover:bg-[#f3e6d3] sm:inline-flex lg:hidden"
             >
               <Phone className="h-3.5 w-3.5 text-[#99702d]" />
               <span>05 53 02 17 14</span>

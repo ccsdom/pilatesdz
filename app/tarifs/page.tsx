@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles, ShieldCheck, Check, Phone, Menu } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { BrandLockup } from "@/components/brand/brand-lockup";
+import { PublicHeader } from "@/components/brand/public-header";
+import { PublicMobileBottomNav } from "@/components/brand/public-mobile-bottom-nav";
 import { StudioPricing } from "@/features/packages/studio-pricing";
 import { QUARTERLY_DISCOUNT_PERCENT } from "@/domain/models/studio-offers";
 
@@ -11,7 +13,7 @@ export const metadata = {
 
 export default function TarifsPage() {
   return (
-    <div className="min-h-screen bg-[#faf7f2] text-[#1c1917] font-sans antialiased selection:bg-[#b7893b] selection:text-white overflow-x-hidden">
+    <div className="min-h-screen bg-[#faf7f2] text-[#1c1917] font-sans antialiased selection:bg-[#b7893b] selection:text-white overflow-x-hidden pb-16 md:pb-0">
       
       {/* Dynamic Background Glows */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
@@ -19,40 +21,7 @@ export default function TarifsPage() {
         <div className="absolute top-[35%] -right-40 h-[600px] w-[600px] rounded-full bg-radial from-[#d4af37]/15 via-transparent to-transparent blur-3xl" />
       </div>
 
-      {/* Header Glassmorphism - IDENTIQUE À L'ACCUEIL */}
-      <header className="sticky top-0 z-50 border-b border-[#e7dac8]/60 bg-[#faf7f2]/85 backdrop-blur-xl transition-all duration-300">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
-          <BrandLockup compact />
-          
-          <nav className="hidden items-center gap-9 text-xs font-medium uppercase tracking-[0.2em] text-[#524b42] lg:flex">
-            <Link href="/studio" className="transition-colors hover:text-[#99702d]">Le Studio</Link>
-            <Link href="/pratiques" className="transition-colors hover:text-[#99702d]">Nos Pratiques</Link>
-            <Link href="/horaires" className="transition-colors hover:text-[#99702d]">Horaires</Link>
-            <Link href="/tarifs" className="text-[#99702d] font-semibold">Tarifs</Link>
-            <Link href="/contact" className="transition-colors hover:text-[#99702d]">Contact</Link>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <a 
-              href="tel:0553021714" 
-              className="hidden items-center gap-2 rounded-full border border-[#cdae72]/50 px-4 py-2 text-xs font-semibold tracking-wider text-[#38322a] transition-all hover:bg-[#f3e6d3] sm:inline-flex"
-            >
-              <Phone className="h-3.5 w-3.5 text-[#99702d]" />
-              <span>05 53 02 17 14</span>
-            </a>
-            <Link 
-              href="/reservation" 
-              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-[#1c1917] px-6 py-2.5 text-xs font-semibold tracking-wider text-white shadow-md transition-all duration-300 hover:bg-[#b7893b] hover:text-black hover:shadow-xl hover:shadow-[#b7893b]/20"
-            >
-              <span>Réserver</span>
-              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-            </Link>
-            <button className="p-2 text-[#1c1917] lg:hidden" aria-label="Ouvrir le menu">
-              <Menu className="h-6 w-6" />
-            </button>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       <main className="relative z-10">
         
@@ -112,6 +81,8 @@ export default function TarifsPage() {
           </p>
         </div>
       </footer>
+
+      <PublicMobileBottomNav />
 
     </div>
   );

@@ -129,6 +129,85 @@ export function PublicSite() {
 
             </div>
 
+          </div>
+        </section>
+
+        {/* LES 3 PILIERS DU STUDIO (LE STUDIO · LES COURS · TARIFS) */}
+        <section className="py-20 bg-white border-y border-[#e5dacf]">
+          <div className="mx-auto max-w-7xl px-6 lg:px-10">
+            
+            <div className="text-center max-w-2xl mx-auto mb-16">
+              <span className="rounded-full border border-[#b7893b]/30 bg-[#b7893b]/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-[#99702d]">
+                Bienvenue au Studio
+              </span>
+              <h2 className="mt-4 font-serif text-4xl font-light text-[#1c1917] sm:text-5xl">
+                Découvrez Pilates Center Alger
+              </h2>
+              <p className="mt-4 text-base text-[#61574b]">
+                Une méthode d'entraînement authentique pour vous accompagner vers votre meilleur équilibre.
+              </p>
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-3">
+              
+              {/* Pilier 1 : Le Studio */}
+              <div className="group relative rounded-3xl border border-[#e5dacf] bg-[#faf7f2] p-8 transition-all duration-300 hover:-translate-y-1 hover:border-[#b7893b] hover:shadow-xl flex flex-col justify-between">
+                <div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#b7893b]/15 text-[#99702d]">
+                    <MapPin className="h-6 w-6" />
+                  </div>
+                  <h3 className="mt-6 font-serif text-2xl font-normal text-[#1c1917]">LE STUDIO</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[#61574b]">
+                    Niché au Centre Commercial Zemzem à Bir Mourad Raïs. Un cocon d'exception équipé de machines Reformer haut de gamme.
+                  </p>
+                </div>
+                <div className="mt-8 pt-4 border-t border-[#e5dacf]">
+                  <Link href="/le-studio" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#99702d] group-hover:text-[#b7893b]">
+                    <span>Découvrir le lieu</span>
+                    <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* Pilier 2 : Les Cours */}
+              <div className="group relative rounded-3xl border border-[#e5dacf] bg-[#faf7f2] p-8 transition-all duration-300 hover:-translate-y-1 hover:border-[#b7893b] hover:shadow-xl flex flex-col justify-between">
+                <div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#b7893b]/15 text-[#99702d]">
+                    <Sparkles className="h-6 w-6" />
+                  </div>
+                  <h3 className="mt-6 font-serif text-2xl font-normal text-[#1c1917]">LES COURS</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[#61574b]">
+                    Reformer en petit comité (4-6 max), Sol Matwork, Cours Duo en binôme et Coaching individuel sur-mesure.
+                  </p>
+                </div>
+                <div className="mt-8 pt-4 border-t border-[#e5dacf]">
+                  <Link href="/les-cours" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#99702d] group-hover:text-[#b7893b]">
+                    <span>Explorer nos cours</span>
+                    <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* Pilier 3 : Tarifs */}
+              <div className="group relative rounded-3xl border border-[#e5dacf] bg-[#faf7f2] p-8 transition-all duration-300 hover:-translate-y-1 hover:border-[#b7893b] hover:shadow-xl flex flex-col justify-between">
+                <div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#b7893b]/15 text-[#99702d]">
+                    <ShieldCheck className="h-6 w-6" />
+                  </div>
+                  <h3 className="mt-6 font-serif text-2xl font-normal text-[#1c1917]">TARIFS & FORMULES</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[#61574b]">
+                    Séances à l'unité, forfaits 10 ou 20 séances et abonnements mensuels ou trimestriels avec remise de 10%.
+                  </p>
+                </div>
+                <div className="mt-8 pt-4 border-t border-[#e5dacf]">
+                  <Link href="/tarifs" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#99702d] group-hover:text-[#b7893b]">
+                    <span>Consulter les prix</span>
+                    <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </div>
+              </div>
+
+            </div>
 
           </div>
         </section>
