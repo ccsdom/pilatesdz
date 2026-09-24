@@ -17,7 +17,7 @@ export function createAuthService(auth: AuthGateway, memberships: MembershipRepo
       const identity = await auth.verifyIdToken(token);
       const age = now() / 1000 - identity.authTime;
       if (!Number.isFinite(age) || age < -30 || age > 300) throw new AccessError(401);
-      const access = await accessFor(identity.uid, ["client", "admin"]);
+      const access = await accessFor(identity.uid, ["client", "admin", "manager"]);
       const cookie = await auth.createSession(token, SESSION_DURATION_MS);
       return { cookie, access };
     },

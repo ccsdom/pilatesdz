@@ -7,7 +7,7 @@ import { ManagementError } from "@/domain/ports/access-management";
 export const runtime = "nodejs";
 export async function GET(request: NextRequest) {
   try {
-    const actor = await getAuthService().authorize(request.cookies.get(SESSION_COOKIE)?.value, ["admin", "client"]);
+    const actor = await getAuthService().authorize(request.cookies.get(SESSION_COOKIE)?.value, ["admin", "manager", "client"]);
     const params = request.nextUrl.searchParams;
     const page = await getClientHistoryService().list(actor, params.get("month") ?? studioDay().slice(0, 7), params.get("clientId") ?? undefined, params.get("after") ?? undefined);
     return NextResponse.json(page, { headers: { "Cache-Control": "no-store" } });

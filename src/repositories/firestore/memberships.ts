@@ -12,7 +12,7 @@ export function firestoreMemberships(db: Firestore): MembershipRepository {
       if (!snapshot.exists) return null;
       const data = snapshot.data();
       if (!data || data.centerId !== centerId || data.uid !== uid || typeof data.active !== "boolean" ||
-          (data.role !== "client" && data.role !== "admin")) return null;
+          (data.role !== "client" && data.role !== "admin" && data.role !== "manager")) return null;
       return { uid, centerId, active: data.active, role: data.role } satisfies Membership;
     },
   };

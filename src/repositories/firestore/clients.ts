@@ -1,3 +1,4 @@
+import { isCenterOperator } from "@/domain/models/access";
 import "server-only";
 import { createHash } from "node:crypto";
 import { FieldPath, type Firestore, type Transaction, type DocumentData } from "firebase-admin/firestore";
@@ -8,7 +9,7 @@ import type { ClientRepository } from "@/domain/ports/clients";
 
 export function clientRepository(db: Firestore): ClientRepository {
   const base = (actor: Access) => {
-    if (actor.role !== "admin" || !/^[a-z0-9-]+$/.test(actor.centerId)) throw new AccessError(403);
+    if (!isCenterOperator(actor.role) || !/^[a-z0-9-]+$/.test(actor.centerId)) throw new AccessError(403);
     return `centers/${actor.centerId}`;
   };
   const profileRef = (actor: Access, id: string) => {
@@ -27,7 +28,7 @@ export function clientRepository(db: Firestore): ClientRepository {
   }
   async function administrator(tx: Transaction, actor: Access) {
     const member = (await tx.get(memberRef(actor, actor.uid))).data();
-    if (member?.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== "admin" || member.active !== true) throw new AccessError(403);
+    if (member?.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== actor.role || !isCenterOperator(member.role) || member.active !== true) throw new AccessError(403);
   }
   function decode(actor: Access, id: string, data?: DocumentData): ClientProfile {
     if (!data) throw new ManagementError(404, "Fiche cliente introuvable dans ce centre.");
@@ -93,6 +94,7 @@ export function clientRepository(db: Firestore): ClientRepository {
       });
     },
     async reserveInvitation(actor, id) {
+      if (actor.role !== "admin") throw new AccessError(403);
       return db.runTransaction(async (tx) => {
         await administrator(tx, actor);
         const ref = profileRef(actor, id);
@@ -118,6 +120,7 @@ export function clientRepository(db: Firestore): ClientRepository {
       });
     },
     async link(actor, id, uid) {
+      if (actor.role !== "admin") throw new AccessError(403);
       await db.runTransaction(async (tx) => {
         await administrator(tx, actor);
         const ref = profileRef(actor, id);

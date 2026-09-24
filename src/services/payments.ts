@@ -1,3 +1,4 @@
+import { isCenterOperator } from "@/domain/models/access";
 import { z } from "zod";
 import { AccessError, type Access } from "@/domain/models/access";
 import { clientIdSchema } from "@/domain/models/client";
@@ -7,7 +8,7 @@ import type { PaymentRepository } from "@/domain/ports/payments";
 
 export function createPaymentService(repository: PaymentRepository) {
   function check(actor: Access, clientId: string, subscriptionId: string) {
-    if (actor.role !== "admin") throw new AccessError(403);
+    if (!isCenterOperator(actor.role)) throw new AccessError(403);
     if (!clientIdSchema.safeParse(clientId).success || !z.string().uuid().safeParse(subscriptionId).success) throw new ManagementError(400, "Identifiant invalide.");
   }
   return {

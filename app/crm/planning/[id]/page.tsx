@@ -15,7 +15,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Séance — Pilates Center Alger", robots: { index: false, follow: false } };
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const result = await getPageAccess(["admin"]);
+  const result = await getPageAccess(["admin", "manager"]);
   if (!result.access) return <AccessErrorView message={result.error} />;
   let details;
   try { details = await getPlanningService().get(result.access, (await params).id); }

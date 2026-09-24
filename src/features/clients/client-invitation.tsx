@@ -1,4 +1,5 @@
 "use client";
+import { useCrmRole } from "@/features/auth/crm-role";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -27,6 +28,8 @@ export function ClientInvitation({ details }: { details: ClientDetails }) {
     finally { setBusy(false); }
   }
   const status = { none: "Aucun compte de connexion", pending: "Invitation à reprendre", active: "Accès autorisé au centre", disabled: "Accès désactivé au centre" }[details.access];
+  const role = useCrmRole();
+  if (role !== "admin") return <p className="text-sm">La gestion de l’accès en ligne est réservée à l’administrateur.</p>;
   return <section className="space-y-4 rounded-2xl border border-[#b7893b]/25 bg-[#ede3d0]/40 p-5 dark:bg-[#b7893b]/5"><div className="flex items-center gap-2.5"><KeyRound size={18} className="text-[#a77b37]" /><h2 className="font-serif text-xl">Espace cliente</h2></div><p className="inline-flex rounded-lg bg-[#fffdf9] px-3 py-2 text-xs font-medium dark:bg-white/5">{status}</p><p className="text-xs leading-6 text-[#847969] dark:text-[#b4a898]">{cloud ? "La cliente reçoit à son adresse enregistrée un e-mail pour choisir son mot de passe et accéder à son espace personnel." : "Démonstration locale : aucun e-mail réel n’est envoyé. L’invitation utilise les coordonnées enregistrées dans cette fiche."}</p>
     {details.access !== "disabled" && details.profile.status === "active" && <Button type="button" variant="outline" onClick={invite} disabled={busy} className="h-auto min-h-11 w-full whitespace-normal rounded-xl text-xs">{busy ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}{busy ? "Préparation…" : cloud ? "Envoyer l’e-mail d’accès" : details.access === "active" ? "Préparer un nouveau lien" : "Inviter à l’espace cliente"}</Button>}
     {details.profile.status === "inactive" && <p className="text-sm text-muted-foreground">Réactivez la fiche pour préparer une invitation.</p>}

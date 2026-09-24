@@ -17,7 +17,7 @@ export default async function Page({
 }: {
   searchParams: Promise<{ day?: string; view?: string }>;
 }) {
-  const result = await getPageAccess(["admin"]);
+  const result = await getPageAccess(["admin", "manager"]);
   if (!result.access) return <AccessErrorView message={result.error} />;
 
   const params = await searchParams;

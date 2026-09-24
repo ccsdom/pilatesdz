@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Validation des séances — Pilates Center", robots: { index: false, follow: false } };
 export default async function Page() {
-  const result = await getPageAccess(["admin"]);
+  const result = await getPageAccess(["admin", "manager"]);
   if (!result.access) return <AccessErrorView message={result.error} />;
   let settings, pending;
   try { const repository = settlementRepository(getFirebaseAdmin().firestore); [settings, pending] = await Promise.all([repository.settings(result.access), repository.pending(result.access)]); }

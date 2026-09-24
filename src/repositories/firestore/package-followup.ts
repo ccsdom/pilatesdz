@@ -1,3 +1,4 @@
+import { isCenterOperator } from "@/domain/models/access";
 import "server-only";
 import { FieldPath, type Firestore } from "firebase-admin/firestore";
 import { AccessError } from "@/domain/models/access";
@@ -12,10 +13,10 @@ export function packageFollowupRepository(db: Firestore, now = Date.now): Packag
   return { async list(actor, after) {
     const at = now();
     return db.runTransaction(async tx => {
-      if (actor.role !== "admin" || !/^[a-z0-9-]+$/.test(actor.centerId) || !clientIdSchema.safeParse(actor.uid).success) throw new AccessError(403);
+      if (!isCenterOperator(actor.role) || !/^[a-z0-9-]+$/.test(actor.centerId) || !clientIdSchema.safeParse(actor.uid).success) throw new AccessError(403);
       const root = `centers/${actor.centerId}`;
       const member = (await tx.get(db.doc(`${root}/members/${actor.uid}`))).data();
-      if (!member || member.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== "admin" || member.active !== true) throw new AccessError(403);
+      if (!member || member.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== actor.role || !isCenterOperator(member.role) || member.active !== true) throw new AccessError(403);
       let query = db.collection(`${root}/clients`).orderBy(FieldPath.documentId()).limit(26);
       if (after !== undefined) {
         if (!clientIdSchema.safeParse(after).success) throw new AccessError(403);

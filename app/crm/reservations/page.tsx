@@ -14,7 +14,7 @@ export const metadata = {
 };
 
 export default async function Page() {
-  const result = await getPageAccess(["admin"]);
+  const result = await getPageAccess(["admin", "manager"]);
   if (!result.access) return <AccessErrorView message={result.error} />;
 
   let data: ReservationsPage = { items: [], nextCursor: null };

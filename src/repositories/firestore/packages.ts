@@ -1,3 +1,4 @@
+import { isCenterOperator } from "@/domain/models/access";
 import "server-only";
 import { FieldPath, type DocumentData, type Firestore } from "firebase-admin/firestore";
 import { AccessError } from "@/domain/models/access";
@@ -18,10 +19,10 @@ export function packagesRepository(db: Firestore, now = Date.now): PackageReposi
   return {
     async assign(actor, clientId, id, input) {
       return db.runTransaction(async (tx) => {
-        if (actor.role !== "admin" || !/^[a-z0-9-]+$/.test(actor.centerId) || !clientIdSchema.safeParse(clientId).success || !clientIdSchema.safeParse(id).success) throw new AccessError(403);
+        if (!isCenterOperator(actor.role) || !/^[a-z0-9-]+$/.test(actor.centerId) || !clientIdSchema.safeParse(clientId).success || !clientIdSchema.safeParse(id).success) throw new AccessError(403);
         const root = `centers/${actor.centerId}`;
         const member = (await tx.get(db.doc(`${root}/members/${actor.uid}`))).data();
-        if (!member || member.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== "admin" || member.active !== true) throw new AccessError(403);
+        if (!member || member.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== actor.role || !isCenterOperator(member.role) || member.active !== true) throw new AccessError(403);
         const profile = db.doc(`${root}/clients/${clientId}`);
         const data = (await tx.get(profile)).data();
         if (!data || data.id !== clientId || data.centerId !== actor.centerId) throw new ManagementError(404, "Cliente introuvable dans ce centre.");
@@ -50,7 +51,7 @@ export function packagesRepository(db: Firestore, now = Date.now): PackageReposi
         const member = (await tx.get(db.doc(`${root}/members/${actor.uid}`))).data();
         if (!member || member.uid !== actor.uid || member.centerId !== actor.centerId || member.active !== true || member.role !== actor.role) throw new AccessError(403);
         if (actor.role === "client" && requestedClientId) throw new AccessError(403);
-        const clientId = actor.role === "admin" ? requestedClientId : member.clientId;
+        const clientId = isCenterOperator(actor.role) ? requestedClientId : member.clientId;
         if (typeof clientId !== "string" || !clientIdSchema.safeParse(clientId).success) throw new ManagementError(400, "Fiche cliente requise.");
         const profile = db.doc(`${root}/clients/${clientId}`);
         const data = (await tx.get(profile)).data();

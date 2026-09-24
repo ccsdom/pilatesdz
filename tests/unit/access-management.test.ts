@@ -5,7 +5,7 @@ import type { Access } from "../../src/domain/models/access";
 const admin: Access = { uid: "admin", centerId: "alger", role: "admin" };
 function setup() {
   const accounts = { create: vi.fn().mockResolvedValue("new-client"), invitation: vi.fn().mockResolvedValue("local-link") };
-  const members = { add: vi.fn(), find: vi.fn().mockResolvedValue({ uid: "client", email: "client@pilates.test", active: true }), deactivate: vi.fn() };
+  const members = { add: vi.fn(), find: vi.fn().mockResolvedValue({ uid: "client", email: "client@pilates.test", active: true }), deactivate: vi.fn(), reactivate: vi.fn(), reserveManager: vi.fn(), addManager: vi.fn() };
   return { accounts, members, service: createAccessManagement(accounts, members) };
 }
 describe("access management", () => {
@@ -53,4 +53,33 @@ it("returns an email acknowledgement without an action link for cloud invitation
   accounts.invitation.mockResolvedValue(null);
   await expect(service.invite(admin, "recipient@example.invalid", "Cliente")).resolves.toEqual({ uid: "new-client", invitationUrl: null, emailAccepted: true });
   await expect(service.invitation(admin, "client")).resolves.toEqual({ invitationUrl: null, emailAccepted: true });
+});
+
+it.each(["client", "manager"] as const)("denies %s all access operations before touching accounts", async role => {
+  const { service, accounts, members } = setup();
+  const actor: Access = { ...admin, role };
+  await expect(service.inviteManager(actor, "team@example.test", "Team")).rejects.toMatchObject({ status: 403 });
+  await expect(service.reactivate(actor, "someone")).rejects.toMatchObject({ status: 403 });
+  await expect(service.deactivate(actor, "someone")).rejects.toMatchObject({ status: 403 });
+  await expect(service.invitation(actor, "someone")).rejects.toMatchObject({ status: 403 });
+  expect(accounts.create).not.toHaveBeenCalled();
+  expect(members.reserveManager).not.toHaveBeenCalled();
+  expect(members.reactivate).not.toHaveBeenCalled();
+});
+
+it("reserves manager identity before provisioning and sends an invitation after attaching membership", async () => {
+  const { service, accounts, members } = setup();
+  members.reserveManager.mockResolvedValue("manager-reserved");
+  await expect(service.inviteManager(admin, "team@example.test", "Team")).resolves.toMatchObject({ uid: "manager-reserved" });
+  expect(accounts.create).toHaveBeenCalledWith("team@example.test", "Team", "manager-reserved");
+  expect(members.addManager).toHaveBeenCalledWith(admin, "manager-reserved");
+  expect(members.addManager.mock.invocationCallOrder[0]).toBeLessThan(accounts.invitation.mock.invocationCallOrder[0]);
+});
+
+it("never attaches manager membership when account provisioning conflicts", async () => {
+  const { service, accounts, members } = setup();
+  accounts.create.mockRejectedValue(new Error("Account conflict"));
+  await expect(service.inviteManager(admin, "team@example.test", "Team")).rejects.toThrow("Account conflict");
+  expect(members.addManager).not.toHaveBeenCalled();
+  expect(accounts.invitation).not.toHaveBeenCalled();
 });

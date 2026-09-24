@@ -1,3 +1,4 @@
+import { isCenterOperator } from "@/domain/models/access";
 import "server-only";
 import { type Firestore } from "firebase-admin/firestore";
 import { AccessError } from "@/domain/models/access";
@@ -11,12 +12,12 @@ import type { ClientHistoryRepository } from "@/domain/ports/client-history";
 export function clientHistoryRepository(db: Firestore, now = Date.now): ClientHistoryRepository {
   return { async list(actor, month, requestedClientId, after) {
     return db.runTransaction(async (tx) => {
-      if (!/^[a-z0-9-]+$/.test(actor.centerId) || !clientIdSchema.safeParse(actor.uid).success || !["admin", "client"].includes(actor.role)) throw new AccessError(403);
+      if (!/^[a-z0-9-]+$/.test(actor.centerId) || !clientIdSchema.safeParse(actor.uid).success || !["admin", "manager", "client"].includes(actor.role)) throw new AccessError(403);
       const root = `centers/${actor.centerId}`;
       const member = (await tx.get(db.doc(`${root}/members/${actor.uid}`))).data();
       if (!member || member.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== actor.role || member.active !== true) throw new AccessError(403);
       if (actor.role === "client" && requestedClientId) throw new AccessError(403);
-      const clientId = actor.role === "admin" ? requestedClientId : member.clientId;
+      const clientId = isCenterOperator(actor.role) ? requestedClientId : member.clientId;
       if (typeof clientId !== "string" || !clientIdSchema.safeParse(clientId).success) throw new ManagementError(409, "Votre accès doit être relié à une fiche cliente.");
       const profile = (await tx.get(db.doc(`${root}/clients/${clientId}`))).data();
       if (!profile || profile.id !== clientId || profile.centerId !== actor.centerId) throw new ManagementError(404, "Cliente introuvable dans ce centre.");

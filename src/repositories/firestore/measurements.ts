@@ -1,3 +1,4 @@
+import { isCenterOperator } from "@/domain/models/access";
 import "server-only";
 import { type Firestore, type Transaction, type DocumentData } from "firebase-admin/firestore";
 import { AccessError, type Access } from "@/domain/models/access";
@@ -8,14 +9,14 @@ import type { MeasurementRepository } from "@/domain/ports/measurements";
 
 export function measurementRepository(db: Firestore): MeasurementRepository {
   function refs(actor: Access, clientId: string) {
-    if (actor.role !== "admin" || !/^[a-z0-9-]+$/.test(actor.centerId) || !clientIdSchema.safeParse(actor.uid).success || !clientIdSchema.safeParse(clientId).success) throw new AccessError(403);
+    if (!isCenterOperator(actor.role) || !/^[a-z0-9-]+$/.test(actor.centerId) || !clientIdSchema.safeParse(actor.uid).success || !clientIdSchema.safeParse(clientId).success) throw new AccessError(403);
     const client = db.doc(`centers/${actor.centerId}/clients/${clientId}`);
     return { client, member: db.doc(`centers/${actor.centerId}/members/${actor.uid}`), measurements: client.collection("measurements") };
   }
   async function authorize(tx: Transaction, actor: Access, clientId: string) {
     const ref = refs(actor, clientId);
     const member = (await tx.get(ref.member)).data();
-    if (member?.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== "admin" || member.active !== true) throw new AccessError(403);
+    if (member?.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== actor.role || !isCenterOperator(member.role) || member.active !== true) throw new AccessError(403);
     const client = (await tx.get(ref.client)).data();
     if (!client || client.id !== clientId || client.centerId !== actor.centerId) throw new ManagementError(404, "Fiche cliente introuvable dans ce centre.");
     return ref;

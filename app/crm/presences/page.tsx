@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Présences à renseigner — Pilates Center Alger", robots: { index: false, follow: false } };
 export default async function Page({ searchParams }: { searchParams: Promise<{ from?: string; to?: string }> }) {
-  const result = await getPageAccess(["admin"]);
+  const result = await getPageAccess(["admin", "manager"]);
   if (!result.access) return <AccessErrorView message={result.error} />;
   const query = await searchParams, at = getRequestTime();
   const from = typeof query.from === "string" ? query.from : studioDay(at - 6 * 86400000);

@@ -18,7 +18,7 @@ export const metadata = { title: "Encaissements — Pilates Center Alger", robot
 export default async function Page({ params, searchParams }: {
   params: Promise<{ id: string; subscriptionId: string }>; searchParams: Promise<{ after?: string }>;
 }) {
-  const result = await getPageAccess(["admin"]);
+  const result = await getPageAccess(["admin", "manager"]);
   if (!result.access) return <AccessErrorView message={result.error} />;
   const { id, subscriptionId } = await params;
   const query = await searchParams;

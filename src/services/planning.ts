@@ -1,3 +1,4 @@
+import { isCenterOperator } from "@/domain/models/access";
 import { AccessError, type Access } from "@/domain/models/access";
 import { clientIdSchema } from "@/domain/models/client";
 import { sessionInputSchema, dayRange } from "@/domain/models/planning";
@@ -6,7 +7,7 @@ import type { PlanningRepository } from "@/domain/ports/planning";
 
 export function createPlanningService(repository: PlanningRepository) {
   function id(value: string) { if (!clientIdSchema.safeParse(value).success) throw new ManagementError(400, "Identifiant invalide."); return value; }
-  function admin(actor: Access) { if (actor.role !== "admin") throw new AccessError(403); }
+  function admin(actor: Access) { if (!isCenterOperator(actor.role)) throw new AccessError(403); }
   return {
     pendingAttendance(actor: Access, from: string, to: string) {
       admin(actor);

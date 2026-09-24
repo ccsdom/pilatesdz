@@ -1,3 +1,4 @@
+import { isCenterOperator } from "@/domain/models/access";
 import "server-only";
 import { FieldPath, type Firestore } from "firebase-admin/firestore";
 import { z } from "zod";
@@ -29,7 +30,7 @@ export function subscriptionsRepository(db: Firestore, now = Date.now): Subscrip
         const member = (await tx.get(db.doc(`${root}/members/${actor.uid}`))).data();
         if (!member || member.uid !== actor.uid || member.centerId !== actor.centerId || member.active !== true || member.role !== actor.role) throw new AccessError(403);
         if (actor.role === "client" && requestedClientId !== undefined) throw new AccessError(403);
-        const clientId = actor.role === "admin" ? requestedClientId : member.clientId;
+        const clientId = isCenterOperator(actor.role) ? requestedClientId : member.clientId;
         if (typeof clientId !== "string" || !clientIdSchema.safeParse(clientId).success) throw new ManagementError(400, "Fiche cliente requise.");
         const profile = db.doc(`${root}/clients/${clientId}`);
         const client = (await tx.get(profile)).data();
@@ -50,11 +51,11 @@ export function subscriptionsRepository(db: Firestore, now = Date.now): Subscrip
     },
     async assign(actor, clientId, requestId, plan) {
       return db.runTransaction(async tx => {
-        if (actor.role !== "admin" || !/^[a-z0-9-]+$/.test(actor.centerId)
+        if (!isCenterOperator(actor.role) || !/^[a-z0-9-]+$/.test(actor.centerId)
           || !/^[a-zA-Z0-9_-]{1,128}$/.test(clientId) || !/^[a-zA-Z0-9_-]{1,128}$/.test(requestId)) throw new AccessError(403);
         const root = `centers/${actor.centerId}`;
         const member = (await tx.get(db.doc(`${root}/members/${actor.uid}`))).data();
-        if (member?.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== "admin" || member.active !== true) throw new AccessError(403);
+        if (member?.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== actor.role || !isCenterOperator(member.role) || member.active !== true) throw new AccessError(403);
         const profile = db.doc(`${root}/clients/${clientId}`);
         const client = (await tx.get(profile)).data();
         if (!client || client.id !== clientId || client.centerId !== actor.centerId) throw new ManagementError(404, "Cliente introuvable dans ce centre.");

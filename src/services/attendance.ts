@@ -1,10 +1,11 @@
+import { isCenterOperator } from "@/domain/models/access";
 import { AccessError, type Access } from "@/domain/models/access";
 import { clientIdSchema } from "@/domain/models/client";
 import { attendanceInputSchema } from "@/domain/models/attendance";
 import { ManagementError } from "@/domain/ports/access-management";
 import type { AttendanceRepository } from "@/domain/ports/attendance";
 export function createAttendanceService(repository: AttendanceRepository) {
-  function admin(actor: Access) { if (actor.role !== "admin") throw new AccessError(403); }
+  function admin(actor: Access) { if (!isCenterOperator(actor.role)) throw new AccessError(403); }
   return {
     mark(actor: Access, value: unknown) {
       admin(actor);

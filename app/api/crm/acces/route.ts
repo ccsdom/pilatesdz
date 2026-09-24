@@ -6,10 +6,13 @@ import { authErrorResponse } from "@/lib/auth/http";
 import { isTrustedMutation, readLimitedBody } from "@/lib/auth/request-policy";
 import { ManagementError } from "@/domain/ports/access-management";
 import { getClientService } from "@/lib/clients/server";
+import { getFirebaseAdmin } from "@/lib/firebase/admin";
 
 export const runtime = "nodejs";
 const uid = z.string().min(1).max(128).refine((value) => !value.includes("/"));
 const input = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("invite-manager"), email: z.string().trim().email().max(254).transform(value => value.toLowerCase()), name: z.string().trim().min(2).max(100) }).strict(),
+  z.object({ action: z.literal("reactivate"), uid }).strict(),
   z.object({ action: z.literal("invite"), email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()), name: z.string().trim().min(1).max(100) }).strict(),
   z.object({ action: z.literal("invitation"), uid }).strict(),
   z.object({ action: z.literal("deactivate"), uid }).strict(),
@@ -27,6 +30,13 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) return json({ error: "Requête invalide." }, 400);
     const service = getAccessManagement();
     const data = parsed.data;
+    if (data.action === "invite-manager") return json(await service.inviteManager(actor, data.email, data.name), 201);
+    if (data.action === "reactivate") {
+      const user = await getFirebaseAdmin().auth.getUser(data.uid);
+      if (user.disabled) throw new ManagementError(409, "Ce compte est désactivé dans Firebase. Vérifiez-le avant de réactiver son accès au centre.");
+      await service.reactivate(actor, data.uid);
+      return json({ success: true, active: true });
+    }
     if (data.action === "invite") {
       const clients = getClientService();
       const profile = await clients.create(actor, { email: data.email, name: data.name, phone: "", status: "active" });

@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Historique cliente — Pilates Center Alger", robots: { index: false, follow: false } };
 export default async function Page({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ month?: string; after?: string }> }) {
-  const result = await getPageAccess(["admin"]);
+  const result = await getPageAccess(["admin", "manager"]);
   if (!result.access) return <AccessErrorView message={result.error} />;
   const { id } = await params, query = await searchParams;
   const month = typeof query.month === "string" ? query.month : studioDay(getRequestTime()).slice(0, 7);

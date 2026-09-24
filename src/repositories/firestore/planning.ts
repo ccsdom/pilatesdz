@@ -1,3 +1,4 @@
+import { isCenterOperator } from "@/domain/models/access";
 import "server-only";
 import { attendanceOpen, readAttendance, type Attendance } from "@/domain/models/attendance";
 import { FieldPath, type DocumentData, type Firestore, type Transaction } from "firebase-admin/firestore";
@@ -12,7 +13,7 @@ import { creditStatus, creditTransition } from "@/domain/models/credit-settlemen
 
 export function planningRepository(db: Firestore, now = Date.now): PlanningRepository {
   function root(actor: Access) {
-    if (!/^[a-z0-9-]+$/.test(actor.centerId) || !["admin", "client"].includes(actor.role)) throw new AccessError(403);
+    if (!/^[a-z0-9-]+$/.test(actor.centerId) || !["admin", "manager", "client"].includes(actor.role)) throw new AccessError(403);
     return `centers/${actor.centerId}`;
   }
   function safeId(id: string) { if (!clientIdSchema.safeParse(id).success) throw new ManagementError(400, "Identifiant invalide."); return id; }
@@ -21,8 +22,8 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
   const bookingRef = (actor: Access, id: string, clientId: string) => sessionRef(actor, id).collection("bookings").doc(safeId(clientId));
   async function identity(tx: Transaction, actor: Access, adminOnly = false) {
     const member = (await tx.get(db.doc(`${root(actor)}/members/${safeId(actor.uid)}`))).data();
-    if (!member || member.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== actor.role || member.active !== true || (adminOnly && actor.role !== "admin")) throw new AccessError(403);
-    if (actor.role === "admin") return { clientId: null, active: true };
+    if (!member || member.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== actor.role || member.active !== true || (adminOnly && !isCenterOperator(actor.role))) throw new AccessError(403);
+    if (isCenterOperator(actor.role)) return { clientId: null, active: true };
     if (typeof member.clientId !== "string") throw new ManagementError(409, "Votre fiche doit être reliée à votre accès par le centre.");
     const profile = (await tx.get(profileRef(actor, member.clientId))).data();
     if (!profile || profile.id !== member.clientId || profile.centerId !== actor.centerId || profile.authUid !== actor.uid || !["active", "inactive"].includes(profile.status)) throw new AccessError(403);
@@ -183,7 +184,7 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
         const session = decode(actor, id, (await tx.get(sessionRef(actor, id))).data());
         const myBooking = person.clientId ? bookingStatus(session, person.clientId, (await tx.get(bookingRef(actor, id, person.clientId))).data()) : "none";
         const attendees: { clientId: string; name: string; attendance: Attendance; credit: ReturnType<typeof creditStatus> }[] = [];
-        if (actor.role === "admin") {
+        if (isCenterOperator(actor.role)) {
           const bookings = await tx.get(sessionRef(actor, id).collection("bookings").where("status", "==", "confirmed").limit(31));
           if (bookings.size > session.capacity) throw new Error("Invalid occupancy");
           for (const doc of bookings.docs) {
@@ -199,7 +200,7 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
     async book(actor, id, targetClientId) {
       await db.runTransaction(async (tx) => {
         const person = await identity(tx, actor);
-        if (actor.role === "admin") {
+        if (isCenterOperator(actor.role)) {
           if (!targetClientId) throw new AccessError(403);
           const profile = (await tx.get(profileRef(actor, targetClientId))).data();
           if (!profile) throw new ManagementError(404, "Cliente introuvable dans ce centre.");
@@ -238,8 +239,8 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
     async cancelBooking(actor, id, targetClientId) {
       await db.runTransaction(async (tx) => {
         const person = await identity(tx, actor);
-        if (targetClientId && actor.role !== "admin") throw new AccessError(403);
-        const clientId = actor.role === "admin" ? targetClientId : person.clientId;
+        if (targetClientId && !isCenterOperator(actor.role)) throw new AccessError(403);
+        const clientId = isCenterOperator(actor.role) ? targetClientId : person.clientId;
         if (!clientId) throw new ManagementError(400, "Cliente requise.");
         const ref = sessionRef(actor, id);
         const session = decode(actor, id, (await tx.get(ref)).data());

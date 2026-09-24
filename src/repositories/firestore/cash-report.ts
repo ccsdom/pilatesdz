@@ -1,3 +1,4 @@
+import { isCenterOperator } from "@/domain/models/access";
 import "server-only";
 import { FieldPath, type Firestore } from "firebase-admin/firestore";
 import { z } from "zod";
@@ -12,11 +13,11 @@ export function cashReportRepository(db: Firestore): CashReportRepository {
   return {
     async get(actor, month, after, scope = "page") {
       return db.runTransaction(async tx => {
-        if (actor.role !== "admin" || !/^[a-z0-9-]+$/.test(actor.centerId) || !clientIdSchema.safeParse(actor.uid).success) throw new AccessError(403);
+        if (!isCenterOperator(actor.role) || !/^[a-z0-9-]+$/.test(actor.centerId) || !clientIdSchema.safeParse(actor.uid).success) throw new AccessError(403);
         cashMonthSchema.parse(month);
         const root = `centers/${actor.centerId}`;
         const member = (await tx.get(db.doc(`${root}/members/${actor.uid}`))).data();
-        if (member?.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== "admin" || member.active !== true) throw new AccessError(403);
+        if (member?.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== actor.role || !isCenterOperator(member.role) || member.active !== true) throw new AccessError(403);
         const [year, number] = month.split("-").map(Number);
         const nextMonth = number === 12 ? `${year + 1}-01` : `${year}-${String(number + 1).padStart(2, "0")}`;
         const snapshot = await tx.get(db.collectionGroup("payments").where("centerId", "==", actor.centerId)

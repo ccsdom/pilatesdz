@@ -16,7 +16,7 @@ export async function GET(
   try {
     const actor = await getAuthService().authorize(
       request.cookies.get(SESSION_COOKIE)?.value,
-      ["admin", "client"]
+      ["admin", "manager", "client"]
     );
     const { id } = await params;
     const res = await getPlanningService().get(actor, id);

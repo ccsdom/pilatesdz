@@ -1,3 +1,4 @@
+import { isCenterOperator } from "@/domain/models/access";
 import { AccessError, type Access } from "@/domain/models/access";
 import { clientIdSchema, clientInputSchema } from "@/domain/models/client";
 import { ManagementError, type AccountProvisioner } from "@/domain/ports/access-management";
@@ -6,7 +7,7 @@ import { directoryFiltersSchema, matchesDirectory, type DirectoryFilters } from 
 import type { ClientProfile } from "@/domain/models/client";
 
 export function createClientService(repository: ClientRepository, accounts: AccountProvisioner) {
-  function admin(actor: Access) { if (actor.role !== "admin") throw new AccessError(403); }
+  function admin(actor: Access) { if (!isCenterOperator(actor.role)) throw new AccessError(403); }
   function id(value: string) { if (!clientIdSchema.safeParse(value).success) throw new ManagementError(400, "Identifiant invalide."); return value; }
   function input(value: unknown) {
     const result = clientInputSchema.safeParse(value);
@@ -42,6 +43,7 @@ export function createClientService(repository: ClientRepository, accounts: Acco
       return { clients, next: cursor ?? null };
     },
     async invite(actor: Access, clientId: string) {
+      if (actor.role !== "admin") throw new AccessError(403);
       admin(actor); id(clientId);
       const profile = await repository.reserveInvitation(actor, clientId);
       const uid = profile.authUid ?? profile.invitationUid;

@@ -22,7 +22,7 @@ const json = (data: unknown, status = 200) => NextResponse.json(data, { status, 
 const failure = (error: unknown) => error instanceof ManagementError ? json({ error: error.message }, error.status) : authErrorResponse(error);
 export async function GET(request: NextRequest) {
   try {
-    const actor = await getAuthService().authorize(request.cookies.get(SESSION_COOKIE)?.value, ["admin", "client"]);
+    const actor = await getAuthService().authorize(request.cookies.get(SESSION_COOKIE)?.value, ["admin", "manager", "client"]);
     const params = request.nextUrl.searchParams;
     const service = getPlanningService();
     return json(params.get("id") ? await service.get(actor, params.get("id")!) : await service.list(actor, params.get("day") ?? studioDay(), params.get("after") ?? undefined));
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   if (!isTrustedMutation(request.headers.get("origin"), request.headers.get("content-type"), process.env.APP_ORIGIN)) return json({ error: "Requête non autorisée." }, 403);
   try {
-    const actor = await getAuthService().authorize(request.cookies.get(SESSION_COOKIE)?.value, ["admin", "client"]);
+    const actor = await getAuthService().authorize(request.cookies.get(SESSION_COOKIE)?.value, ["admin", "manager", "client"]);
     let raw;
     try { raw = await readLimitedBody(request); } catch { return json({ error: "Requête trop volumineuse." }, 413); }
     let parsed;

@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Soldes à vérifier — Pilates Center Alger", robots: { index: false, follow: false } };
 const labels = { partial: "Encaissement partiel enregistré", none: "Aucun paiement enregistré", history: "Historique d’encaissement, montant net nul", settled: "Solde enregistré" };
 export default async function Page({ searchParams }: { searchParams: Promise<{ after?: string }> }) {
-  const result = await getPageAccess(["admin"]);
+  const result = await getPageAccess(["admin", "manager"]);
   if (!result.access) return <AccessErrorView message={result.error} />;
   const query = await searchParams;
   let report;

@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
-    const actor = await getAuthService().authorize(request.cookies.get(SESSION_COOKIE)?.value, ["admin"]);
+    const actor = await getAuthService().authorize(request.cookies.get(SESSION_COOKIE)?.value, ["admin", "manager"]);
     const parsed = cashMonthSchema.safeParse(request.nextUrl.searchParams.get("month"));
     if (!parsed.success) throw new ManagementError(400, "Choisissez un mois valide.");
     const month = parsed.data, days = dashboardMonthDays(month);

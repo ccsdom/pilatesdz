@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Mensurations — Pilates Center Alger", robots: { index: false, follow: false }, referrer: "no-referrer" };
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const result = await getPageAccess(["admin"]);
+  const result = await getPageAccess(["admin", "manager"]);
   if (!result.access) return <AccessErrorView message={result.error} />;
   const { id } = await params;
   let details, initial;

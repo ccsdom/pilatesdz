@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const actor = await getAuthService().authorize(
       request.cookies.get(SESSION_COOKIE)?.value,
-      ["admin"]
+      ["admin", "manager"]
     );
     const after = request.nextUrl.searchParams.get("after") || undefined;
     const res = await getPlanningService().listReservations(actor, after, 20);

@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
   try {
     const { cookie, access } = await getAuthService().login(parsed.data.idToken);
-    const response = NextResponse.json({ destination: access.role === "admin" ? "/crm" : "/espace-cliente" },
+    const response = NextResponse.json({ destination: access.role !== "client" ? "/crm" : "/espace-cliente" },
       { headers: { "Cache-Control": "no-store" } });
     response.cookies.set(SESSION_COOKIE, cookie, { httpOnly: true, sameSite: "strict", path: "/",
       secure: process.env.NODE_ENV === "production", maxAge: SESSION_DURATION_MS / 1000 });

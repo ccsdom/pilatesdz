@@ -6,7 +6,7 @@ import { ManagementError } from "@/domain/ports/access-management";
 export const runtime = "nodejs";
 export async function GET(request: NextRequest) {
   try {
-    const actor = await getAuthService().authorize(request.cookies.get(SESSION_COOKIE)?.value, ["admin"]);
+    const actor = await getAuthService().authorize(request.cookies.get(SESSION_COOKIE)?.value, ["admin", "manager"]);
     const month = request.nextUrl.searchParams.get("month") ?? "";
     const csv = await getCashReportService().exportCsv(actor, month);
     return new NextResponse(csv, { headers: {

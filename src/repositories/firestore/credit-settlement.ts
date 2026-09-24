@@ -1,3 +1,4 @@
+import { isCenterOperator } from "@/domain/models/access";
 import "server-only";
 import { randomUUID } from "node:crypto";
 import type { Firestore, Transaction } from "firebase-admin/firestore";
@@ -14,9 +15,9 @@ export function settlementRepository(db: Firestore, now = Date.now) {
     return db.doc(`centers/${centerId}`);
   }
   async function admin(tx: Transaction, actor: Access) {
-    if (actor.role !== "admin" || !clientIdSchema.safeParse(actor.uid).success) throw new AccessError(403);
+    if (!isCenterOperator(actor.role) || !clientIdSchema.safeParse(actor.uid).success) throw new AccessError(403);
     const member = (await tx.get(root(actor.centerId).collection("members").doc(actor.uid))).data();
-    if (!member || member.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== "admin" || member.active !== true) throw new AccessError(403);
+    if (!member || member.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== actor.role || !isCenterOperator(member.role) || member.active !== true) throw new AccessError(403);
   }
   function policy(data: FirebaseFirestore.DocumentData | undefined) {
     const mode = data?.mode ?? "manual", version = data?.version ?? 0;

@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Forfaits — Pilates Center Alger", robots: { index: false, follow: false } };
 export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string; after?: string }> }) {
-  const result = await getPageAccess(["admin"]);
+  const result = await getPageAccess(["admin", "manager"]);
   if (!result.access) return <AccessErrorView message={result.error} />;
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q.trim() : "";

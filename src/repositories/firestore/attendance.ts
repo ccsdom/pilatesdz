@@ -1,3 +1,4 @@
+import { isCenterOperator } from "@/domain/models/access";
 import "server-only";
 import type { Firestore, Transaction } from "firebase-admin/firestore";
 import { AccessError, type Access } from "@/domain/models/access";
@@ -9,10 +10,10 @@ import type { AttendanceRepository } from "@/domain/ports/attendance";
 
 export function attendanceRepository(db: Firestore, now = Date.now): AttendanceRepository {
   async function context(tx: Transaction, actor: Access, id: string, clientId: string) {
-    if (actor.role !== "admin" || !/^[a-z0-9-]+$/.test(actor.centerId) || ![actor.uid, id, clientId].every((value) => clientIdSchema.safeParse(value).success)) throw new AccessError(403);
+    if (!isCenterOperator(actor.role) || !/^[a-z0-9-]+$/.test(actor.centerId) || ![actor.uid, id, clientId].every((value) => clientIdSchema.safeParse(value).success)) throw new AccessError(403);
     const root = `centers/${actor.centerId}`;
     const member = (await tx.get(db.doc(`${root}/members/${actor.uid}`))).data();
-    if (!member || member.active !== true || member.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== "admin") throw new AccessError(403);
+    if (!member || member.active !== true || member.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== actor.role || !isCenterOperator(member.role)) throw new AccessError(403);
     const sessionRef = db.doc(`${root}/sessions/${id}`);
     const session = (await tx.get(sessionRef)).data();
     if (!session || session.id !== id || session.centerId !== actor.centerId) throw new ManagementError(404, "Séance introuvable dans ce centre.");

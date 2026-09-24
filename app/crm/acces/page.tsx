@@ -44,7 +44,7 @@ export default async function Page({
       if (
         data.uid !== doc.id ||
         data.centerId !== result.access.centerId ||
-        data.role !== "client" ||
+        !["client", "manager"].includes(data.role) ||
         typeof data.active !== "boolean"
       )
         return [];
@@ -54,6 +54,7 @@ export default async function Page({
           email: typeof data.email === "string" ? data.email : "",
           name: typeof data.name === "string" ? data.name : doc.id,
           active: data.active,
+          role: data.role as "client" | "manager",
           ...(typeof data.clientId === "string" &&
           /^[a-zA-Z0-9_-]{1,128}$/.test(data.clientId)
             ? { clientId: data.clientId }
@@ -76,7 +77,7 @@ export default async function Page({
         <p className="mt-3 max-w-xl text-sm leading-6 text-[#c6bcab]">Un espace personnel pour chaque cliente, des accès maîtrisés pour votre équipe.</p></div><span className="hidden rounded-2xl border border-[#d8b97f]/20 bg-[#d8b97f]/10 p-4 text-[#d8b97f] sm:inline-flex"><KeyRound size={30} strokeWidth={1.2} /></span></div>
         <p className="relative mt-6 flex items-start gap-2.5 border-t border-white/10 pt-5 text-xs leading-5 text-[#c6bcab]"><ShieldCheck size={16} className="mt-0.5 shrink-0 text-[#d8b97f]" /><span>
           {process.env.FIREBASE_USE_EMULATORS === "false"
-            ? "Les invitations sont envoyées par e-mail via Firebase. La cliente choisit elle-même son mot de passe. Aucun lien de connexion privé n’est affiché ici."
+            ? "Les invitations sont envoyées par e-mail via Firebase. La personne invitée choisit son mot de passe. Aucun lien de connexion privé n’est affiché ici."
             : "Démonstration locale : aucun e-mail réel n’est envoyé. Les liens de test permettent de choisir un mot de passe."}
         </span></p>
       </header>
@@ -84,7 +85,7 @@ export default async function Page({
       <AccessManager members={members} />
 
       <nav className="flex flex-wrap items-center justify-between gap-4 border-t border-[#b7893b]/20 pt-5 text-xs" aria-label="Pages des accès">
-        <p className="text-[#847969] dark:text-[#b4a898]">{members.length} accès cliente(s) sur cette page · {next ? "Suite disponible" : "Fin de la liste"}</p>
+        <p className="text-[#847969] dark:text-[#b4a898]">{members.length} accès sur cette page · {next ? "Suite disponible" : "Fin de la liste"}</p>
         <div className="flex gap-3">{after && <Link href="/crm/acces" className="inline-flex items-center gap-2 rounded-xl border border-[#b7893b]/25 px-4 py-2.5"><ArrowLeft size={14} />Première page</Link>}
         {next && (
           <Link href={`/crm/acces?after=${encodeURIComponent(next)}`} className="inline-flex items-center gap-2 rounded-xl border border-[#b7893b]/25 px-4 py-2.5">

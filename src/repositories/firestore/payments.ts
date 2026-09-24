@@ -1,3 +1,4 @@
+import { isCenterOperator } from "@/domain/models/access";
 import "server-only";
 import { FieldPath, type Firestore, type Transaction } from "firebase-admin/firestore";
 import { z } from "zod";
@@ -15,11 +16,11 @@ export const paymentSchema = paymentInputSchema.extend({ id: z.string().uuid(), 
 }).strip();
 export function paymentsRepository(db: Firestore, now = Date.now): PaymentRepository {
   async function context(tx: Transaction, actor: Access, clientId: string, subscriptionId: string) {
-    if (actor.role !== "admin" || !/^[a-z0-9-]+$/.test(actor.centerId) || !clientIdSchema.safeParse(actor.uid).success
+    if (!isCenterOperator(actor.role) || !/^[a-z0-9-]+$/.test(actor.centerId) || !clientIdSchema.safeParse(actor.uid).success
       || !clientIdSchema.safeParse(clientId).success || !z.string().uuid().safeParse(subscriptionId).success) throw new AccessError(403);
     const root = `centers/${actor.centerId}`;
     const member = (await tx.get(db.doc(`${root}/members/${actor.uid}`))).data();
-    if (member?.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== "admin" || member.active !== true) throw new AccessError(403);
+    if (member?.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== actor.role || !isCenterOperator(member.role) || member.active !== true) throw new AccessError(403);
     const client = (await tx.get(db.doc(`${root}/clients/${clientId}`))).data();
     if (!client || client.id !== clientId || client.centerId !== actor.centerId) throw new ManagementError(404, "Cliente introuvable.");
     const ref = db.doc(`${root}/clients/${clientId}/subscriptions/${subscriptionId}`);

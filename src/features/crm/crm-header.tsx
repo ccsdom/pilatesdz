@@ -1,4 +1,5 @@
 "use client";
+import { useCrmRole } from "@/features/auth/crm-role";
 
 import * as React from "react";
 import Link from "next/link";
@@ -40,6 +41,7 @@ export function CrmHeader({
   title = "Administration",
   subtitle = "Pilates Center Alger",
 }: CrmHeaderProps) {
+  const role = useCrmRole();
   return (
     <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-4 border-b border-border/80 bg-background/95 px-5 py-3.5 backdrop-blur-md transition-colors dark:bg-[#151310]/95 dark:border-[#2e2a24]">
       {/* Left side: Center branding & page context */}
@@ -87,7 +89,7 @@ export function CrmHeader({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem asChild>
+              {role === "admin" && <DropdownMenuItem asChild>
                 <Link
                   href="/crm/acces"
                   className="flex items-center gap-2.5 px-2.5 py-2 text-sm cursor-pointer rounded-lg"
@@ -95,10 +97,10 @@ export function CrmHeader({
                   <KeyRound className="h-4 w-4 text-[#b7893b]" />
                   <div className="flex flex-col">
                     <span className="font-medium">Gestion des accès</span>
-                    <span className="text-xs text-muted-foreground">Admins et autorisations</span>
+                    <span className="text-xs text-muted-foreground">Clientes et managers</span>
                   </div>
                 </Link>
-              </DropdownMenuItem>
+              </DropdownMenuItem>}
               <DropdownMenuItem asChild>
                 <Link
                   href="/crm/forfaits/suivi"
@@ -152,10 +154,10 @@ export function CrmHeader({
               className="flex items-center gap-2 h-9 px-3 rounded-full border-border/60 bg-background/80 hover:bg-accent transition-all shadow-xs"
             >
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#b7893b] text-[11px] font-bold text-black shadow-xs">
-                A
+                {role === "admin" ? "A" : "M"}
               </div>
               <span className="hidden text-xs font-medium sm:inline-block text-foreground">
-                Admin
+                {role === "admin" ? "Admin" : "Manager"}
               </span>
               <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
@@ -163,18 +165,18 @@ export function CrmHeader({
           <DropdownMenuContent align="end" className="w-64 rounded-xl p-1.5 shadow-lg">
             <div className="flex items-center gap-3 px-3 py-2.5 border-b border-border/50">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#b7893b] text-sm font-bold text-black">
-                AD
+                {role === "admin" ? "AD" : "MA"}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold truncate text-foreground">Administrateur</p>
+                <p className="text-sm font-semibold truncate text-foreground">{role === "admin" ? "Administrateur" : "Manager"}</p>
                 <p className="text-xs text-muted-foreground truncate">Pilates Center Alger</p>
                 <span className="mt-0.5 inline-flex items-center gap-1 rounded bg-[#b7893b]/15 px-1.5 py-0.5 text-[10px] font-medium text-[#b7893b]">
-                  <ShieldCheck className="h-3 w-3" /> Accès complet
+                  <ShieldCheck className="h-3 w-3" /> {role === "admin" ? "Administration" : "Gestion du centre"}
                 </span>
               </div>
             </div>
             <DropdownMenuGroup className="mt-1">
-              <DropdownMenuItem asChild>
+              {role === "admin" && <DropdownMenuItem asChild>
                 <Link
                   href="/crm/acces"
                   className="flex items-center gap-2 px-2.5 py-2 text-sm cursor-pointer rounded-lg"
@@ -182,7 +184,7 @@ export function CrmHeader({
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span>Mon profil & droits</span>
                 </Link>
-              </DropdownMenuItem>
+              </DropdownMenuItem>}
               <DropdownMenuItem asChild>
                 <Link
                   href="/espace-cliente"
