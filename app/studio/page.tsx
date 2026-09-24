@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { COURSE_MAX_CAPACITY } from "@/domain/models/studio-offers";
 import Image from "next/image";
-import { ArrowRight, Sparkles, MapPin, Clock, Users, Award, ShieldCheck, Heart, Phone, Menu, Check } from "lucide-react";
+import { Sparkles, Clock, Users, Award, Check } from "lucide-react";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { PublicHeader } from "@/components/brand/public-header";
 import { PublicMobileBottomNav } from "@/components/brand/public-mobile-bottom-nav";
@@ -42,7 +43,7 @@ export default function LeStudioPage() {
             </h1>
             
             <p className="mt-8 text-lg leading-relaxed text-[#61574b] lg:text-xl">
-              Niché au Centre Commercial Zemzem à Bir Mourad Raïs, Pilates Center est un cocon chaleureux conçu pour vous offrir une expérience d'entraînement privilégiée et haut de gamme.
+              Niché au Centre Commercial Zemzem à Bir Mourad Raïs, Pilates Center est un cocon chaleureux conçu pour vous offrir une expérience d&apos;entraînement privilégiée et haut de gamme.
             </p>
           </div>
         </section>
@@ -109,7 +110,7 @@ export default function LeStudioPage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#141210]/80 via-transparent to-transparent" />
                   <div className="absolute bottom-6 left-6 right-6 rounded-2xl border border-white/15 bg-black/40 p-5 backdrop-blur-md text-white">
-                    <p className="font-serif text-xl italic text-[#e5be78]">"Pilates. Équilibre. Harmonie. Votre bien-être, notre priorité."</p>
+                    <p className="font-serif text-xl italic text-[#e5be78]">&quot;Pilates. Équilibre. Harmonie. Votre bien-être, notre priorité.&quot;</p>
                     <p className="mt-2 text-xs uppercase tracking-wider text-white/60">Bir Mourad Raïs · Algérie</p>
                   </div>
                 </div>
@@ -138,9 +139,9 @@ export default function LeStudioPage() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#b7893b]/15 text-[#99702d]">
                   <Users className="h-6 w-6" />
                 </div>
-                <h3 className="mt-6 font-serif text-2xl font-normal text-[#1c1917]">Petits comités (4-6 max)</h3>
+                <h3 className="mt-6 font-serif text-2xl font-normal text-[#1c1917]">Petits comités ({COURSE_MAX_CAPACITY} max)</h3>
                 <p className="mt-3 text-sm leading-relaxed text-[#61574b]">
-                  Pas de cours surchargés. Chaque séance est limitée à 4 ou 6 participantes pour vous garantir l’attention individuelle continue de votre coach.
+                  Pas de cours surchargés. Chaque séance est limitée à {COURSE_MAX_CAPACITY} participantes pour vous garantir l’attention individuelle continue de votre coach.
                 </p>
               </div>
 
@@ -150,7 +151,7 @@ export default function LeStudioPage() {
                 </div>
                 <h3 className="mt-6 font-serif text-2xl font-normal text-[#1c1917]">Coachs Certifiées</h3>
                 <p className="mt-3 text-sm leading-relaxed text-[#61574b]">
-                  Une équipe d'enseignantes expérimentées formées à la méthode authentique Joseph Pilates et à l'analyse posturaire.
+                  Une équipe d&apos;enseignantes expérimentées formées à la méthode authentique Joseph Pilates et à l&apos;analyse posturaire.
                 </p>
               </div>
 

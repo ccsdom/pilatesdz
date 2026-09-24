@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ArrowUpRight, BarChart3, CalendarDays, Clock, CreditCard, Download, RefreshCw } from "lucide-react";
-import { formatMonthlyReportCsv, type MonthlyCash, type MonthlyPlanning } from "@/domain/models/dashboard-charts";
+import { type MonthlyCash, type MonthlyPlanning } from "@/domain/models/dashboard-charts";
 
-const surface = "rounded-2xl border border-[#ded4c3] bg-[#fffdf9] p-5 dark:border-[#332e26] dark:bg-[#181613]";
+const surface = "min-w-0 max-w-full rounded-2xl border border-[#ded4c3] bg-[#fffdf9] p-5 dark:border-[#332e26] dark:bg-[#181613]";
 const muted = "text-[#807563] dark:text-[#b7a993]";
 const colors = ["#b7893b", "#7b8775", "#897068", "#697b89", "#bcaa8a", "#988aab"];
 const money = (minor: number) => `${(minor / 100).toLocaleString("fr-FR", { maximumFractionDigits: 2 })} DA`;
@@ -14,22 +14,10 @@ const tooltipStyle = { background: "#fffdf9", color: "#29251e", borderRadius: 12
 const dayLabel = (value: unknown) => String(value).slice(8);
 const fullDay = (value: unknown) => new Date(`${String(value)}T12:00:00Z`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "UTC" });
 
-function downloadCsvReport(month: string, planning: MonthlyPlanning | null, cash: MonthlyCash | null) {
-  const csvContent = formatMonthlyReportCsv(month, planning, cash);
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `pilates-center-alger-statistiques-${month}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
 export function DashboardCharts({ month, planning, cash, planningError, cashError }: { month: string; planning: MonthlyPlanning | null; cash: MonthlyCash | null; planningError?: string; cashError?: string }) {
+  const exportUrl = `/api/crm/statistiques/export?month=${encodeURIComponent(month)}`;
   const monthLabel = new Date(`${month}-01T12:00:00Z`).toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
-  return <section className="space-y-5" aria-label="Statistiques mensuelles">
+  return <section className="min-w-0 max-w-full space-y-5" aria-label="Statistiques mensuelles">
     <header className="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#a77b37]">Le centre en chiffres</p>
@@ -37,9 +25,9 @@ export function DashboardCharts({ month, planning, cash, planningError, cashErro
         <p className={`mt-2 text-xs ${muted}`}>Planning complet du mois sélectionné, séances passées et à venir.</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <button onClick={() => downloadCsvReport(month, planning, cash)} type="button" className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#b7893b]/30 bg-transparent px-3 text-xs font-medium text-[#8d6729] dark:text-[#d5ae65] hover:bg-[#b7893b]/10 transition-colors">
+        <a href={exportUrl} download className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#b7893b]/30 bg-transparent px-3 text-xs font-medium text-[#8d6729] dark:text-[#d5ae65] hover:bg-[#b7893b]/10 transition-colors">
           <Download size={14} /> Exporter CSV
-        </button>
+        </a>
         <form action="/crm" className="flex flex-wrap items-end gap-2">
           <div>
             <label htmlFor="dashboard-month" className={`mb-1 block text-xs ${muted}`}>Période</label>
@@ -52,7 +40,7 @@ export function DashboardCharts({ month, planning, cash, planningError, cashErro
       </div>
     </header>
 
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
       <article className={surface}>
         <CalendarDays size={18} className="mb-3 text-[#b7893b]" />
         <p className={`text-xs ${muted}`}>Réservations sur les séances maintenues</p>
@@ -73,7 +61,7 @@ export function DashboardCharts({ month, planning, cash, planningError, cashErro
       </article>
     </div>
 
-    <div className="grid items-start gap-5 xl:grid-cols-2">
+    <div className="grid min-w-0 grid-cols-1 items-start gap-5 xl:grid-cols-2">
       <article className={surface}>
         <div className="mb-5 flex items-start justify-between gap-3">
           <div>
@@ -133,7 +121,7 @@ export function DashboardCharts({ month, planning, cash, planningError, cashErro
     </div>
 
     {planning && (
-      <div className="grid items-start gap-5 xl:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 items-start gap-5 xl:grid-cols-2">
         <article className={surface}>
           <div className="mb-4 flex items-center justify-between">
             <div>
@@ -161,13 +149,13 @@ export function DashboardCharts({ month, planning, cash, planningError, cashErro
         </article>
 
         <article className={surface}>
-          <div className="grid items-center gap-5 md:grid-cols-[200px_1fr]">
+          <div className="grid min-w-0 grid-cols-1 items-center gap-5 md:grid-cols-[200px_minmax(0,1fr)]">
             <div>
               <h3 className="font-serif text-xl">Répartition des cours</h3>
               <p className={`mt-2 text-xs ${muted}`}>Nombre de séances maintenues par intitulé de cours.</p>
             </div>
             {planning.courses.length ? (
-              <div className="flex flex-wrap items-center gap-5">
+              <div className="flex min-w-0 flex-wrap items-center gap-5">
                 <div className="h-44 w-44 shrink-0" role="img" aria-label="Répartition des séances par type de cours.">
                   <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 176, height: 176 }}>
                     <PieChart>
@@ -180,7 +168,7 @@ export function DashboardCharts({ month, planning, cash, planningError, cashErro
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <ul className="min-w-0 flex-1 space-y-2 text-xs">
+                <ul className="min-w-0 basis-full space-y-2 text-xs">
                   {planning.courses.map((course, index) => (
                     <li key={course.name} className="flex items-center justify-between gap-2">
                       <span className="flex min-w-0 items-center gap-2">
@@ -203,10 +191,9 @@ export function DashboardCharts({ month, planning, cash, planningError, cashErro
     {(planning || cash) && <details className={surface}>
       <summary className="cursor-pointer text-sm font-medium flex items-center justify-between">
         <span>Consulter les données journalières</span>
-        <button type="button" onClick={(e) => { e.preventDefault(); downloadCsvReport(month, planning, cash); }} className="inline-flex items-center gap-1.5 text-xs text-[#a77b37] hover:underline">
-          <Download size={13} /> Fichier CSV
-        </button>
+
       </summary>
+      <a href={exportUrl} download className="mt-3 inline-flex items-center gap-1.5 text-xs text-[#a77b37] underline"><Download size={13} />Fichier CSV</a>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-left text-xs">
           <caption className={`mb-3 text-left ${muted}`}>Les données indisponibles sont indiquées par un tiret.</caption>

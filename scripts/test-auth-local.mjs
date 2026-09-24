@@ -18,7 +18,7 @@ try {
     await delay(1000);
   }
   if (!ready) throw new Error("Next test server not ready.");
-  const tests = spawn(process.execPath, ["node_modules/vitest/vitest.mjs", "run", "--config", "vitest.auth.config.ts"], { env, stdio: "inherit" });
+  const tests = spawn(process.execPath, ["node_modules/vitest/vitest.mjs", "run", "--config", "vitest.auth.config.ts", ...process.argv.slice(2)], { env, stdio: "inherit" });
   process.exitCode = await new Promise((resolve, reject) => { tests.on("error", reject); tests.on("exit", (code) => resolve(code ?? 1)); });
 } finally {
   if (server.pid && server.exitCode === null) {

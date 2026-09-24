@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ShieldCheck, MapPin, Phone, Mail, FileText } from "lucide-react";
+import { ArrowLeft, ShieldCheck, MapPin, Phone, FileText } from "lucide-react";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 
 export const metadata = {
@@ -20,7 +20,7 @@ export default function MentionsLegalesPage() {
             className="inline-flex items-center gap-2 rounded-full border border-[#cdae72]/50 px-4 py-2 text-xs font-semibold text-[#38322a] transition-all hover:bg-[#f3e6d3]"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Retour à l'accueil</span>
+            <span>Retour à l&apos;accueil</span>
           </Link>
         </div>
       </header>
@@ -48,7 +48,7 @@ export default function MentionsLegalesPage() {
               <h2 className="font-serif text-2xl font-normal text-[#1c1917]">1. Éditeur du Site</h2>
             </div>
             <p className="mt-4 text-sm text-[#61574b]">
-              Le site web <strong>Pilates Center Alger</strong> est édité par l'établissement sous l'enseigne commerciale <strong>PILATES CENTER / SCULPTFIT STUDIO</strong>.
+              Le site web <strong>Pilates Center Alger</strong> est édité par l&apos;établissement sous l&apos;enseigne commerciale <strong>PILATES CENTER / SCULPTFIT STUDIO</strong>.
             </p>
             
             <ul className="mt-4 space-y-2 text-sm">
@@ -62,7 +62,7 @@ export default function MentionsLegalesPage() {
               </li>
               <li className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-[#8b652b] shrink-0" />
-                <span><strong>Activité :</strong> Centre d'enseignement du Pilates au sol, Reformer et coaching corporel.</span>
+                <span><strong>Activité :</strong> Centre d&apos;enseignement du Pilates au sol, Reformer et coaching corporel.</span>
               </li>
             </ul>
           </section>
@@ -71,7 +71,7 @@ export default function MentionsLegalesPage() {
           <section className="rounded-3xl border border-[#e5dacf] bg-white p-8 shadow-sm">
             <h2 className="font-serif text-2xl font-normal text-[#1c1917]">2. Hébergement & Infrastructure Web</h2>
             <p className="mt-4 text-sm">
-              L’application web et l'infrastructure de réservation en ligne sont hébergées sur des serveurs sécurisés conformes aux normes internationales de protection des données, avec stockage des sessions et authentification chiffrée.
+              L’application web et l&apos;infrastructure de réservation en ligne sont hébergées sur des serveurs sécurisés conformes aux normes internationales de protection des données, avec stockage des sessions et authentification chiffrée.
             </p>
           </section>
 
@@ -79,7 +79,7 @@ export default function MentionsLegalesPage() {
           <section className="rounded-3xl border border-[#e5dacf] bg-white p-8 shadow-sm">
             <h2 className="font-serif text-2xl font-normal text-[#1c1917]">3. Propriété Intellectuelle</h2>
             <p className="mt-4 text-sm">
-              L'ensemble des éléments figurant sur le site (textes, graphismes, logos, éléments visuels, illustrations d'affiches, icônes, photographies et code informatique) est la propriété exclusive de <strong>Pilates Center Alger</strong>. Toute reproduction, représentation, modification ou adaptation totale ou partielle sans autorisation écrite préalable est strictement interdite.
+              L&apos;ensemble des éléments figurant sur le site (textes, graphismes, logos, éléments visuels, illustrations d&apos;affiches, icônes, photographies et code informatique) est la propriété exclusive de <strong>Pilates Center Alger</strong>. Toute reproduction, représentation, modification ou adaptation totale ou partielle sans autorisation écrite préalable est strictement interdite.
             </p>
           </section>
 
@@ -87,7 +87,7 @@ export default function MentionsLegalesPage() {
           <section className="rounded-3xl border border-[#e5dacf] bg-white p-8 shadow-sm">
             <h2 className="font-serif text-2xl font-normal text-[#1c1917]">4. Limites de Responsabilité</h2>
             <p className="mt-4 text-sm">
-              Pilates Center s'efforce de fournir des informations précises et à jour sur son planning et ses tarifs. Toutefois, l'établissement ne saurait être tenu responsable d'éventuelles interruptions temporaires de service dues à la maintenance informatique ou à des cas de force majeure.
+              Pilates Center s&apos;efforce de fournir des informations précises et à jour sur son planning et ses tarifs. Toutefois, l&apos;établissement ne saurait être tenu responsable d&apos;éventuelles interruptions temporaires de service dues à la maintenance informatique ou à des cas de force majeure.
             </p>
           </section>
 

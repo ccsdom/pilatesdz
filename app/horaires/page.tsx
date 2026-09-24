@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles, Clock, Calendar, ShieldCheck, Users, Phone, Menu, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Clock, Calendar, Phone, Menu } from "lucide-react";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 
 export const metadata = {
@@ -159,7 +159,7 @@ export default function HorairesPage() {
                   </h2>
                   <div className="mt-6 rounded-2xl bg-white/80 p-6 border border-[#cdae72]/30 text-center shadow-sm">
                     <span className="font-serif text-3xl font-light text-[#9a702c]">Fermé</span>
-                    <p className="mt-2 text-xs text-[#706659]">Fermeture hebdomadaire pour entretien et repos de l'équipe.</p>
+                    <p className="mt-2 text-xs text-[#706659]">Fermeture hebdomadaire pour entretien et repos de l&apos;équipe.</p>
                   </div>
                 </div>
 
@@ -176,7 +176,7 @@ export default function HorairesPage() {
             <div className="mt-16 rounded-3xl border border-[#cdae72]/40 bg-[#faf7f2] p-8 text-center shadow-lg">
               <h3 className="font-serif text-2xl font-light text-[#1c1917]">Comment réserver votre créneau ?</h3>
               <p className="mt-3 text-sm text-[#61574b] max-w-xl mx-auto">
-                Connectez-vous à votre espace client en ligne pour choisir la date et le créneau qui vous conviennent, ou contactez directement l'accueil du studio.
+                Connectez-vous à votre espace client en ligne pour choisir la date et le créneau qui vous conviennent, ou contactez directement l&apos;accueil du studio.
               </p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
                 <Link

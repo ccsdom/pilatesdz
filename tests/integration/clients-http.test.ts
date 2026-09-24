@@ -1,4 +1,4 @@
-import { randomBytes, createHash } from "node:crypto";
+import { randomBytes, randomUUID, createHash } from "node:crypto";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { initializeApp, deleteApp, type App } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
@@ -41,6 +41,14 @@ beforeAll(async () => {
   }
 });
 afterAll(async () => { if (app) await deleteApp(app); });
+
+it("rejects an email already used by a legacy profile without an email lock", async () => {
+  const db = getFirestore(app);
+  const profile = await create({ ...contact, email: "legacy-duplicate@pilates.test" });
+  await db.doc(`centers/alger/clientEmails/${createHash("sha256").update(profile.email).digest("hex")}`).delete();
+  const duplicate = await post({ action: "create", profile: { ...contact, email: profile.email } }, adminCookie);
+  expect(duplicate.status).toBe(409);
+});
 
 it("protects measurements, isolates centers, preserves revisions and rejects competing updates", async () => {
   const route = "/api/crm/mensurations";
@@ -99,16 +107,17 @@ it("creates, searches and updates a profile while preventing stale writes", asyn
   expect(profile).toMatchObject({ ...contact, centerId: "alger", authUid: null, version: 1 });
   const detail = await get(`?id=${profile.id}`);
   expect(detail.headers.get("cache-control")).toBe("no-store");
-  expect((await detail.json()).access).toBe("none");
+  const linked = await detail.json();
+  expect(linked.access).toBe("active");
   for (const q of ["EMI", "ben", "+213 (550)", "CRM-EMILIE@", "ali"]) {
     const result = await (await get(`?q=${encodeURIComponent(q)}`)).json();
     expect(result.clients.map((item: { id: string }) => item.id)).toContain(profile.id);
   }
-  const updatedContact = { ...contact, name: "Nadia Ben-Ali", email: "crm-nadia@pilates.test", phone: "0550 98 76 54", status: "inactive" };
-  const updated = await post({ action: "update", id: profile.id, version: 1, profile: updatedContact }, adminCookie);
-  expect(updated.status).toBe(200); expect((await updated.json()).profile.version).toBe(2);
+  const updatedContact = { ...contact, name: "Nadia Ben-Ali", email: contact.email, phone: "0550 98 76 54", status: "inactive" };
+  const updated = await post({ action: "update", id: profile.id, version: linked.profile.version, profile: updatedContact }, adminCookie);
+  expect(updated.status).toBe(200); expect((await updated.json()).profile.version).toBe(linked.profile.version + 1);
   expect((await post({ action: "update", id: profile.id, version: 1, profile: contact }, adminCookie)).status).toBe(409);
-  expect((await (await get("?q=crm-emilie@")).json()).clients).toHaveLength(0);
+  expect((await (await get("?q=crm-emilie@")).json()).clients.map((item: { id: string }) => item.id)).toContain(profile.id);
   expect((await (await get("?q=nadia")).json()).clients.map((item: { id: string }) => item.id)).toContain(profile.id);
   expect((await post({ action: "invite", id: profile.id }, adminCookie)).status).toBe(409);
 });
@@ -165,7 +174,8 @@ it("links an invited profile to exactly one identity and enforces deactivation",
   expect((await fetch(origin + "/api/auth/me", { headers: { Cookie: cookie } })).status).toBe(403);
 });
 it("resumes provisioning with a reserved UID after an interrupted Auth creation", async () => {
-  const profile = await create({ ...contact, email: "resume-profile@pilates.test" });
+  const profile = { ...contact, id: randomUUID(), email: "resume-profile@pilates.test" };
+  await getFirestore(app).doc(`centers/alger/clients/${profile.id}`).set({ ...profile, centerId: "alger", authUid: null, invitationUid: null, version: 1, createdAt: Date.now(), updatedAt: Date.now() });
   const uid = `pc_${createHash("sha256").update(`alger/${profile.id}`).digest("hex")}`;
   await getFirestore(app).doc(`centers/alger/clients/${profile.id}`).update({ invitationUid: uid });
   await getAuth(app).createUser({ uid, email: profile.email, password });
@@ -174,8 +184,8 @@ it("resumes provisioning with a reserved UID after an interrupted Auth creation"
   expect((await (await get(`?id=${profile.id}`)).json()).access).toBe("active");
 });
 it("never takes over an existing unrelated account and allows correcting its email", async () => {
+  await getAuth(app).createUser({ uid: "external-account", email: "existing-external@pilates.test", password });
   const profile = await create({ ...contact, email: "existing-external@pilates.test" });
-  await getAuth(app).createUser({ uid: "external-account", email: profile.email, password });
   expect((await post({ action: "invite", id: profile.id }, adminCookie)).status).toBe(409);
   expect((await getFirestore(app).doc("centers/alger/members/external-account").get()).exists).toBe(false);
   const details = await (await get(`?id=${profile.id}`)).json(); expect(details.access).toBe("none");

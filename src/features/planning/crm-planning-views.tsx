@@ -20,15 +20,7 @@ import {
   XCircle,
   Eye,
 } from "lucide-react";
-import {
-  studioDateTime,
-  studioDay,
-  getDaysOfWeek,
-  getDaysOfMonthGrid,
-  weekRange,
-  monthRange,
-  type PilatesSession,
-} from "@/domain/models/planning";
+import { studioDateTime, studioDay, getDaysOfWeek, getDaysOfMonthGrid, monthRange, type PilatesSession } from "@/domain/models/planning";
 import { Button } from "@/components/ui/button";
 import { SessionPreviewModal } from "./session-preview-modal";
 
@@ -326,10 +318,10 @@ export function CrmPlanningViews({
             </span>
             <span>·</span>
             <span>
-              Taux d'occupation : <strong className="text-[#111]">{occupancyRate}%</strong>
+              Taux d&apos;occupation : <strong className="text-[#111]">{occupancyRate}%</strong>
             </span>
           </div>
-          <span className="text-[11px] text-[#887c6c]">Toutes les heures sont celles d'Alger (UTC+1)</span>
+          <span className="text-[11px] text-[#887c6c]">Toutes les heures sont celles d&apos;Alger (UTC+1)</span>
         </div>
       </div>
 
@@ -694,7 +686,7 @@ function WeekView({
                   </span>
                   {isToday && (
                     <span className="rounded-full bg-[#b7893b] px-2 py-0.5 text-[10px] font-bold text-white">
-                      Aujourd'hui
+                      Aujourd&apos;hui
                     </span>
                   )}
                 </div>

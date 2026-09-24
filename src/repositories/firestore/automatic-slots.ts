@@ -1,6 +1,7 @@
 import "server-only";
 import type { Firestore } from "firebase-admin/firestore";
 import { AccessError, type Access } from "@/domain/models/access";
+import { ManagementError } from "@/domain/ports/access-management";
 import { clientIdSchema } from "@/domain/models/client";
 import { bookingCalendarDate } from "@/domain/models/public-booking-calendar";
 import { studioDay } from "@/domain/models/planning";
@@ -10,9 +11,12 @@ import { publicDayQuery, readSlotOccupancy } from "./public-availability";
 /** Materialize only requested days, sharing the public booking identifiers. */
 export async function ensureAutomaticSlots(db: Firestore, actor: Access, from: string, to = from, now = Date.now()) {
   if (!/^[a-z0-9-]+$/.test(actor.centerId) || !clientIdSchema.safeParse(actor.uid).success) throw new AccessError(403);
-  const first = bookingCalendarDate(from).getTime();
-  const last = bookingCalendarDate(to).getTime();
-  if (last < first || last - first > 41 * 86400000) throw new Error("Invalid slot range");
+  let first: number, last: number;
+  try {
+    first = bookingCalendarDate(from).getTime();
+    last = bookingCalendarDate(to).getTime();
+    if (last < first || last - first > 41 * 86400000) throw new Error("Invalid slot range");
+  } catch { throw new ManagementError(400, "Choisissez une période valide de 42 jours maximum."); }
   for (let date = first; date <= last; date += 86400000) {
     const day = new Date(date).toISOString().slice(0, 10);
     if (day < studioDay(now)) continue;

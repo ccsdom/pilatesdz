@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Sparkles, Check, Users, Award, ShieldCheck, Clock, Phone, Heart } from "lucide-react";
+import { ArrowRight, Sparkles, Check, Phone, Heart } from "lucide-react";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { PublicHeader } from "@/components/brand/public-header";
 import { PublicMobileBottomNav } from "@/components/brand/public-mobile-bottom-nav";
@@ -67,7 +67,7 @@ export default function LesCoursPage() {
                 </h2>
 
                 <p className="text-base leading-relaxed text-[#61574b]">
-                  Le Pilates Reformer s'effectue sur un appareil composé d'un chariot coulissant, de ressorts de résistance progressive, de sangles et de poulies. Cette machine offre un soutien fluide tout en augmentant l'intensité du travail musculaire.
+                  Le Pilates Reformer s&apos;effectue sur un appareil composé d&apos;un chariot coulissant, de ressorts de résistance progressive, de sangles et de poulies. Cette machine offre un soutien fluide tout en augmentant l&apos;intensité du travail musculaire.
                 </p>
 
                 <div className="rounded-2xl border border-[#cdae72]/40 bg-[#faf7f2] p-6 space-y-3">
@@ -179,7 +179,7 @@ export default function LesCoursPage() {
                     </div>
                     <h3 className="font-serif text-3xl font-light text-[#1c1917]">Maîtrise du Centrage</h3>
                     <p className="text-sm leading-relaxed text-[#676056] max-w-md mx-auto">
-                      "Un corps libre de tensions et de fatigue permet d'affronter les exigences de la vie avec enthousiasme."
+                      &quot;Un corps libre de tensions et de fatigue permet d&apos;affronter les exigences de la vie avec enthousiasme.&quot;
                     </p>
                   </div>
 
@@ -212,11 +212,11 @@ export default function LesCoursPage() {
                 <div>
                   <div className="flex items-center justify-between text-xs font-semibold text-[#c79b4d]">
                     <span>03 · PETIT COMITÉ</span>
-                    <span>MAX 4 A 6 PERSONNES</span>
+                    <span>MAX {COURSE_MAX_CAPACITY} PERSONNES</span>
                   </div>
                   <h3 className="mt-6 font-serif text-3xl font-light text-white">Cours Collectifs</h3>
                   <p className="mt-4 text-sm leading-relaxed text-white/65">
-                    L'énergie motivante du groupe combinée à l'exigence d'un suivi personnalisé. Nos effectifs réduits permettent à la coach de corriger chaque placement et d'adapter les variantes à chaque participante.
+                    L&apos;énergie motivante du groupe combinée à l&apos;exigence d&apos;un suivi personnalisé. Nos effectifs réduits permettent à la coach de corriger chaque placement et d&apos;adapter les variantes à chaque participante.
                   </p>
 
                   <ul className="mt-6 space-y-3 text-sm text-white/85">

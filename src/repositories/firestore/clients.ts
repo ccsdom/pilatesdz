@@ -20,6 +20,11 @@ export function clientRepository(db: Firestore): ClientRepository {
     return db.doc(`${base(actor)}/members/${uid}`);
   };
   const emailRef = (actor: Access, email: string) => db.doc(`${base(actor)}/clientEmails/${createHash("sha256").update(email).digest("hex")}`);
+  async function emailAvailable(tx: Transaction, actor: Access, email: string, exceptId?: string) {
+    const lock = await tx.get(emailRef(actor, email));
+    const matches = await tx.get(db.collection(`${base(actor)}/clients`).where("email", "==", email).limit(2));
+    if ((lock.exists && lock.data()?.clientId !== exceptId) || matches.docs.some(doc => doc.id !== exceptId)) throw new ManagementError(409, "Une fiche utilise déjà cette adresse dans ce centre.");
+  }
   async function administrator(tx: Transaction, actor: Access) {
     const member = (await tx.get(memberRef(actor, actor.uid))).data();
     if (member?.uid !== actor.uid || member.centerId !== actor.centerId || member.role !== "admin" || member.active !== true) throw new AccessError(403);
@@ -42,7 +47,7 @@ export function clientRepository(db: Firestore): ClientRepository {
       const ref = db.collection(`${base(actor)}/clients`).doc();
       return db.runTransaction(async (tx) => {
         await administrator(tx, actor);
-        if ((await tx.get(emailRef(actor, input.email))).exists) throw new ManagementError(409, "Une fiche utilise déjà cette adresse dans ce centre.");
+        await emailAvailable(tx, actor, input.email);
         const now = Date.now();
         const profile: ClientProfile = { ...input, id: ref.id, centerId: actor.centerId, authUid: null, invitationUid: null, version: 1, createdAt: now, updatedAt: now };
         tx.create(ref, { ...profile, searchPrefixes: clientSearchPrefixes(input), createdBy: actor.uid, updatedBy: actor.uid });
@@ -77,10 +82,11 @@ export function clientRepository(db: Firestore): ClientRepository {
         const current = decode(actor, id, (await tx.get(ref)).data());
         if (current.version !== version) throw new ManagementError(409, "Cette fiche a changé. Rechargez-la avant de modifier vos informations.");
         if (current.email !== input.email && (current.authUid || current.invitationUid)) throw new ManagementError(409, "L’e-mail d’un accès créé ou en préparation ne peut pas être modifié ici.");
-        if (current.email !== input.email && (await tx.get(emailRef(actor, input.email))).exists) throw new ManagementError(409, "Une fiche utilise déjà cette adresse dans ce centre.");
+        if (current.email !== input.email) await emailAvailable(tx, actor, input.email, id);
+        const oldEmailLock = current.email !== input.email ? await tx.get(emailRef(actor, current.email)) : null;
         if (current.authUid) linkedMember(actor, current, (await tx.get(memberRef(actor, current.authUid))).data());
         const updated = { ...current, ...input, version: current.version + 1, updatedAt: Date.now() };
-        if (current.email !== input.email) { tx.delete(emailRef(actor, current.email)); tx.create(emailRef(actor, input.email), { clientId: id }); }
+        if (current.email !== input.email) { if (oldEmailLock?.data()?.clientId === id) tx.delete(emailRef(actor, current.email)); tx.set(emailRef(actor, input.email), { clientId: id }); }
         tx.update(ref, { ...updated, searchPrefixes: clientSearchPrefixes(input), updatedBy: actor.uid });
         if (current.authUid) tx.update(memberRef(actor, current.authUid), { name: input.name });
         return updated;

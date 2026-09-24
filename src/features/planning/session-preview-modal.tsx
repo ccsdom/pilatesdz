@@ -24,6 +24,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { COURSE_MAX_CAPACITY } from "@/domain/models/studio-offers";
 import { Button } from "@/components/ui/button";
 import { studioDateTime, type SessionDetails, type PilatesSession, type ReservationRecord } from "@/domain/models/planning";
 
@@ -34,27 +35,22 @@ interface SessionPreviewModalProps {
   initialData?: PilatesSession | ReservationRecord | null;
 }
 
-export function SessionPreviewModal({
+export function SessionPreviewModal(props: SessionPreviewModalProps) {
+  return props.open && props.sessionId ? <LoadedSessionPreview key={props.sessionId} {...props} /> : null;
+}
+
+function LoadedSessionPreview({
   sessionId,
   open,
   onOpenChange,
   initialData,
 }: SessionPreviewModalProps) {
   const [details, setDetails] = useState<SessionDetails | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open || !sessionId) {
-      setDetails(null);
-      setError(null);
-      return;
-    }
-
     let isMounted = true;
-    setLoading(true);
-    setError(null);
-
     fetch(`/api/planning/${sessionId}`)
       .then((res) => {
         if (!res.ok) throw new Error("Impossible de charger les détails de la séance.");
@@ -85,7 +81,7 @@ export function SessionPreviewModal({
     instructor: initialData.instructor,
     startsAt: initialData.startsAt,
     durationMinutes: initialData.durationMinutes,
-    capacity: "capacity" in initialData ? initialData.capacity : 8,
+    capacity: "capacity" in initialData ? initialData.capacity : COURSE_MAX_CAPACITY,
     bookedCount: "bookedCount" in initialData ? initialData.bookedCount : 0,
     status: "status" in initialData ? initialData.status : initialData.sessionStatus,
     centerId: "centerId" in initialData ? initialData.centerId : "",
@@ -95,7 +91,7 @@ export function SessionPreviewModal({
   const fillPercent = session ? Math.min(100, Math.round((session.bookedCount / session.capacity) * 100)) : 0;
   const availableSeats = session ? session.capacity - session.bookedCount : 0;
   const isCancelled = session?.status === "cancelled";
-  const now = Date.now();
+  const [now] = useState(Date.now);
   const isPast = session ? session.startsAt <= now : false;
 
   return (
@@ -261,7 +257,7 @@ export function SessionPreviewModal({
                 onClick={() => onOpenChange(false)}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-[#b7893b] bg-[#fffdf9] hover:bg-[#fbf7ef] px-4 py-2 text-xs font-semibold text-[#8d6729] transition-all"
               >
-                <span>Gérer la séance & Feuille d'émargement</span>
+                <span>Gérer la séance & Feuille d&apos;émargement</span>
                 <ArrowRight size={14} />
               </Link>
             </div>

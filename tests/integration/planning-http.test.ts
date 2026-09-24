@@ -22,9 +22,17 @@ function assign(key: string, value = packageInput, requestId = randomUUID(), coo
 }
 function packages(key: string, cookie = cookies.admin) { return fetch(origin + `/api/forfaits?clientId=planning-it-${key}`, { headers: { Cookie: cookie } }); }
 async function balance(key: string) { return (await (await packages(key)).json()).packages.reduce((sum: number, pack: { remaining: number }) => sum + pack.remaining, 0); }
+let fixtureSlot = 0;
+function nextSessionInput(capacity = 1) {
+  // Separate fixtures from automatically opened 10–20 h slots and from each other.
+  const index = fixtureSlot++;
+  const hour = index % 14 < 10 ? index % 14 : index % 14 + 10;
+  const fixtureDay = studioDay(Date.now() + (2 + Math.floor(index / 14)) * 86400000);
+  return { ...data, capacity, startsAt: parseStudioDateTime(`${fixtureDay}T${String(hour).padStart(2, "0")}:00`) };
+}
 async function create(capacity = 1) {
   const requestId = randomUUID();
-  const response = await post({ action: "create", requestId, session: { ...data, capacity } }, cookies.admin);
+  const response = await post({ action: "create", requestId, session: nextSessionInput(capacity) }, cookies.admin);
   expect(response.status).toBe(201); return (await response.json()).session;
 }
 beforeAll(async () => {
@@ -46,8 +54,73 @@ beforeAll(async () => {
 });
 afterAll(async () => { if (app) await deleteApp(app); });
 
+it("paginates actual reservations beyond empty future slots without losing tied sessions or bookings", async () => {
+  const db = getFirestore(app);
+  const batch = db.batch();
+  const expected: string[] = [];
+  for (let i = 0; i < 65; i++) {
+    const id = `qa-reservations-${String(i).padStart(3, "0")}`;
+    const ref = db.doc(`centers/alger/sessions/${id}`);
+    batch.set(ref, { ...data, id, centerId: "alger", startsAt: data.startsAt + (i < 11 ? 0 : 1000000000), capacity: 4, bookedCount: i < 11 ? 4 : 0, status: "scheduled" });
+    if (i < 11) for (const key of ["a", "b", "c", "d"]) {
+      const clientId = `planning-it-${key}`;
+      // Include a legacy booking without bookedAt: it must still appear.
+      batch.set(ref.collection("bookings").doc(clientId), { centerId: "alger", sessionId: id, clientId, status: "confirmed" });
+      expected.push(`${id}_${clientId}`);
+    }
+  }
+  const foreign = db.doc("centers/oran/sessions/qa-reservations-foreign");
+  batch.set(foreign, { ...data, id: foreign.id, centerId: "oran", bookedCount: 1, status: "scheduled" });
+  batch.set(foreign.collection("bookings").doc("foreign"), { centerId: "oran", sessionId: foreign.id, clientId: "foreign", status: "confirmed" });
+  await batch.commit();
+  const read = (after = "", cookie = cookies.admin) => fetch(`${origin}/api/crm/reservations${after ? `?after=${encodeURIComponent(after)}` : ""}`, { headers: { Cookie: cookie } });
+  expect((await read("", cookies.a)).status).toBe(403);
+  expect((await read("../oran:foreign")).status).toBe(400);
+  const ids: string[] = [];
+  let cursor = "";
+  for (let page = 0; page < 20; page++) {
+    const response = await read(cursor);
+    expect(response.status).toBe(200);
+    const result = await response.json();
+    expect(result.items.length).toBeLessThanOrEqual(20);
+    ids.push(...result.items.map((item: { id: string }) => item.id));
+    if (!result.nextCursor) break;
+    expect(result.nextCursor).not.toBe(cursor);
+    cursor = result.nextCursor;
+  }
+  expect(new Set(ids).size).toBe(ids.length);
+  expect(ids).toEqual(expect.arrayContaining(expected));
+  expect(ids.some(id => id.includes("foreign"))).toBe(false);
+  const cleanup = db.batch();
+  for (const id of expected) {
+    const split = id.indexOf("_planning-it-");
+    cleanup.delete(db.doc(`centers/alger/sessions/${id.slice(0, split)}/bookings/${id.slice(split + 1)}`));
+  }
+  for (let i = 0; i < 65; i++) cleanup.delete(db.doc(`centers/alger/sessions/qa-reservations-${String(i).padStart(3, "0")}`));
+  cleanup.delete(foreign.collection("bookings").doc("foreign")); cleanup.delete(foreign);
+  await cleanup.commit();
+});
+
 function clientHistory(query: string, cookie = cookies.admin) { return fetch(origin + "/api/historique?" + query, { headers: { Cookie: cookie } }); }
+it("downloads an authenticated monthly dashboard CSV and rejects unauthorized or invalid requests", async () => {
+  const read = (month: string, cookie = cookies.admin) => fetch(`${origin}/api/crm/statistiques/export?month=${month}`, { headers: { Cookie: cookie } });
+  expect((await read("2026-09", "")).status).toBe(401);
+  expect((await read("2026-09", cookies.a)).status).toBe(403);
+  expect((await read("2026-13")).status).toBe(400);
+  const response = await read("2020-01");
+  expect(response.status).toBe(200);
+  expect(response.headers.get("content-type")).toContain("text/csv");
+  expect(response.headers.get("content-disposition")).toContain('attachment; filename="pilates-center-alger-statistiques-2020-01.csv"');
+  expect(response.headers.get("cache-control")).toContain("no-store");
+  const csv = await response.text();
+  expect(csv).toContain("2020-01-01");
+  expect(csv).toContain("2020-01-31");
+  expect(csv).toContain("Encaissements nets (DA)");
+});
 it("renders real whole-day CRM metrics beyond the planning preview and excludes cancelled courses", async () => {
+  const initialHtml = await (await fetch(origin + "/crm", { headers: { Cookie: cookies.admin } })).text();
+  const initial = (key: string) => Number(initialHtml.match(new RegExp(`data-testid="dashboard-${key}"[^>]*>([0-9]+)<`))![1]);
+  const initialSessions = initial("sessions"), initialBookings = initial("bookings"), initialAvailable = initial("available");
   const startsAt = parseStudioDateTime(`${studioDay()}T12:00`);
   const batch = getFirestore(app).batch();
   for (let i = 0; i < 55; i++) {
@@ -59,10 +132,10 @@ it("renders real whole-day CRM metrics beyond the planning preview and excludes 
   const response = await fetch(origin + "/crm", { headers: { Cookie: cookies.admin } });
   expect(response.status).toBe(200);
   const html = await response.text();
-  expect(html).toMatch(/data-testid="dashboard-sessions"[^>]*>50</);
-  expect(html).toMatch(/data-testid="dashboard-bookings"[^>]*>100</);
-  expect(html).toMatch(/data-testid="dashboard-available"[^>]*>100</);
-  expect(html).toMatch(/data-testid="dashboard-occupancy"[^>]*>50 %</);
+  expect(html).toMatch(new RegExp(`data-testid="dashboard-sessions"[^>]*>${initialSessions + 50}<`));
+  expect(html).toMatch(new RegExp(`data-testid="dashboard-bookings"[^>]*>${initialBookings + 100}<`));
+  expect(html).toMatch(new RegExp(`data-testid="dashboard-available"[^>]*>${initialAvailable + 100}<`));
+  expect(html).toMatch(new RegExp(`data-testid="dashboard-occupancy"[^>]*>${Math.round((initialBookings + 100) * 100 / (initialBookings + initialAvailable + 200))} %<`));
   expect(html).not.toContain("286 500");
   expect(html).not.toContain("+12,4%");
   const denied = await (await fetch(origin + "/crm", { headers: { Cookie: cookies.sub } })).text();
@@ -317,6 +390,7 @@ it("rejects anonymous access, CSRF, client administration and identity injection
   expect(page).toContain("Accès non autorisé");
 });
 it("creates future sessions and safely retries an identical creation request", async () => {
+  const data = nextSessionInput();
   const requestId = randomUUID();
   for (let attempt = 0; attempt < 2; attempt++) expect((await post({ action: "create", requestId, session: data }, cookies.admin)).status).toBe(201);
   expect((await post({ action: "create", requestId, session: { ...data, capacity: 2 } }, cookies.admin)).status).toBe(409);
@@ -414,6 +488,8 @@ it("refuses reservations and cancellations once a session has started", async ()
 });
 it("paginates a day with identical start times using a stable second key", async () => {
   const paginationDay = studioDay(Date.now() + 4 * 86400000);
+  const baseline = await (await get(`?day=${paginationDay}`)).json();
+  expect(baseline.next).toBeNull();
   const batch = getFirestore(app).batch();
   for (let index = 0; index < 51; index++) {
     const id = `pagination-${String(index).padStart(2, "0")}`;
@@ -423,8 +499,8 @@ it("paginates a day with identical start times using a stable second key", async
   const first = await (await get(`?day=${paginationDay}`)).json();
   expect(first.sessions).toHaveLength(50); expect(first.next).toBeTruthy();
   const second = await (await get(`?day=${paginationDay}&after=${first.next}`)).json();
-  expect(second.sessions).toHaveLength(1); expect(second.next).toBeNull();
-  expect(new Set([...first.sessions, ...second.sessions].map((item: { session: { id: string } }) => item.session.id)).size).toBe(51);
+  expect(second.sessions).toHaveLength(baseline.sessions.length + 1); expect(second.next).toBeNull();
+  expect(new Set([...first.sessions, ...second.sessions].map((item: { session: { id: string } }) => item.session.id)).size).toBe(baseline.sessions.length + 51);
 });
 
 function subscribe(key: string, subscription: object, requestId = randomUUID(), cookie = cookies.admin, requestOrigin = origin) {
@@ -679,7 +755,7 @@ it("summarizes the entire receipt month across pages, including later correction
   expect(first.entries[0].clientName).toBe("Private client sub");
   expect((await monthlyCash("2024-03", first.next)).status).toBe(400);
   const html = await (await fetch(origin + "/crm/encaissements?month=2024-02", { headers: { Cookie: cookies.admin } })).text();
-  expect(html).toContain("Encaissements suivants"); expect(html).toContain("Espèces enregistrées, après corrections");
+  expect(html).toContain("Encaissements suivants"); expect(html).toContain("récapitulatif");
 });
 it("exports the entire selected month and refuses unauthorized downloads", async () => {
   const download = (month: string, cookie = cookies.admin) => fetch(origin + "/api/encaissements/export?" + new URLSearchParams({ month }), { headers: { Cookie: cookie } });

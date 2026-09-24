@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Menu, Sparkles, MapPin, Clock, Users, Phone, Calendar, ShieldCheck, ChevronRight } from "lucide-react";
+import { ArrowRight, Sparkles, MapPin, Clock, Users, Phone, Calendar, ShieldCheck, ChevronRight } from "lucide-react";
 import { StudioPricing } from "@/features/packages/studio-pricing";
-import { COURSE_MAX_CAPACITY } from "@/domain/models/studio-offers";
+import { COURSE_MAX_CAPACITY, MONTHLY_OFFERS, QUARTERLY_DISCOUNT_PERCENT } from "@/domain/models/studio-offers";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { PublicHeader } from "@/components/brand/public-header";
 import { PublicMobileBottomNav } from "@/components/brand/public-mobile-bottom-nav";
@@ -144,7 +144,7 @@ export function PublicSite() {
                 Découvrez Pilates Center Alger
               </h2>
               <p className="mt-4 text-base text-[#61574b]">
-                Une méthode d'entraînement authentique pour vous accompagner vers votre meilleur équilibre.
+                Une méthode d&apos;entraînement authentique pour vous accompagner vers votre meilleur équilibre.
               </p>
             </div>
 
@@ -158,7 +158,7 @@ export function PublicSite() {
                   </div>
                   <h3 className="mt-6 font-serif text-2xl font-normal text-[#1c1917]">LE STUDIO</h3>
                   <p className="mt-3 text-sm leading-relaxed text-[#61574b]">
-                    Niché au Centre Commercial Zemzem à Bir Mourad Raïs. Un cocon d'exception équipé de machines Reformer haut de gamme.
+                    Niché au Centre Commercial Zemzem à Bir Mourad Raïs. Un cocon d&apos;exception équipé de machines Reformer haut de gamme.
                   </p>
                 </div>
                 <div className="mt-8 pt-4 border-t border-[#e5dacf]">
@@ -177,7 +177,7 @@ export function PublicSite() {
                   </div>
                   <h3 className="mt-6 font-serif text-2xl font-normal text-[#1c1917]">LES COURS</h3>
                   <p className="mt-3 text-sm leading-relaxed text-[#61574b]">
-                    Reformer en petit comité (4-6 max), Sol Matwork, Cours Duo en binôme et Coaching individuel sur-mesure.
+                    Reformer en petit comité ({COURSE_MAX_CAPACITY} max), Sol Matwork, Cours Duo en binôme et Coaching individuel sur-mesure.
                   </p>
                 </div>
                 <div className="mt-8 pt-4 border-t border-[#e5dacf]">
@@ -196,7 +196,7 @@ export function PublicSite() {
                   </div>
                   <h3 className="mt-6 font-serif text-2xl font-normal text-[#1c1917]">TARIFS & FORMULES</h3>
                   <p className="mt-3 text-sm leading-relaxed text-[#61574b]">
-                    Séances à l'unité, forfaits 10 ou 20 séances et abonnements mensuels ou trimestriels avec remise de 10%.
+                    Séances à l&apos;unité, abonnements de {MONTHLY_OFFERS.map(offer => offer.sessionsPerMonth).join(" ou ")} séances par mois et paiement trimestriel avec remise de {QUARTERLY_DISCOUNT_PERCENT}%.
                   </p>
                 </div>
                 <div className="mt-8 pt-4 border-t border-[#e5dacf]">
@@ -341,7 +341,7 @@ export function PublicSite() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#141210] via-transparent to-transparent" />
                   <div className="absolute bottom-6 left-6 right-6 rounded-2xl border border-white/15 bg-black/40 p-5 backdrop-blur-md">
-                    <p className="font-serif text-xl italic text-[#e5be78]">"Pilates. Équilibre. Harmonie. Votre bien-être, notre priorité."</p>
+                    <p className="font-serif text-xl italic text-[#e5be78]">&quot;Pilates. Équilibre. Harmonie. Votre bien-être, notre priorité.&quot;</p>
                     <p className="mt-2 text-xs uppercase tracking-wider text-white/60">Bir Mourad Raïs · Algérie</p>
                   </div>
                 </div>
@@ -397,7 +397,7 @@ export function PublicSite() {
                 Quatre manières d’exceller.
               </h2>
               <p className="mt-4 max-w-xl text-base text-[#676056]">
-                Que vous recherchiez le renforcement profond du sol ou l'assistance fluide du Reformer, chaque séance est adaptée à votre niveau.
+                Que vous recherchiez le renforcement profond du sol ou l&apos;assistance fluide du Reformer, chaque séance est adaptée à votre niveau.
               </p>
             </div>
 
@@ -497,7 +497,7 @@ export function PublicSite() {
                     Centre Commercial Zemzem, Bir Mourad Raïs.
                   </h2>
                   <p className="text-base text-[#61574b]">
-                    Notre studio vous accueille dans un cadre moderne et facile d'accès avec stationnement à proximité.
+                    Notre studio vous accueille dans un cadre moderne et facile d&apos;accès avec stationnement à proximité.
                   </p>
 
                   <div className="grid gap-6 sm:grid-cols-2 pt-4">

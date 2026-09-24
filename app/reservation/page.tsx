@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Phone, Menu, Sparkles, ShieldCheck, Clock, Users, MapPin } from "lucide-react";
+import { ArrowRight, Phone, Menu, Sparkles, ShieldCheck, Clock, Users } from "lucide-react";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { BookingWizard } from "@/features/public-site/booking-wizard";
 
@@ -82,7 +82,7 @@ export default function ReservationPage() {
               </div>
               <div className="flex items-center gap-2 rounded-full border border-[#dccbb0] bg-white px-4 py-2 shadow-xs">
                 <ShieldCheck className="h-4 w-4 text-[#99702d]" />
-                <span>Annulation gratuite H-12</span>
+                <span>Annulation avant le créneau</span>
               </div>
             </div>
           </div>
@@ -100,7 +100,7 @@ export default function ReservationPage() {
           <div className="mx-auto max-w-7xl px-6 lg:px-10">
             <div className="text-center max-w-2xl mx-auto mb-12">
               <h2 className="font-serif text-3xl font-light text-[#1c1917]">Questions fréquentes sur la réservation</h2>
-              <p className="mt-2 text-sm text-[#61574b]">Tout ce qu'il faut savoir avant votre venue au studio.</p>
+              <p className="mt-2 text-sm text-[#61574b]">Tout ce qu&apos;il faut savoir avant votre venue au studio.</p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
@@ -113,10 +113,10 @@ export default function ReservationPage() {
               </div>
 
               <div className="rounded-3xl border border-[#dccbb0] bg-white p-6 space-y-3">
-                <div className="text-xs font-bold uppercase tracking-wider text-[#99702d]">Politique d'annulation</div>
-                <h3 className="font-serif text-lg text-[#1c1917]">Annulation sans frais H-12</h3>
+                <div className="text-xs font-bold uppercase tracking-wider text-[#99702d]">Politique d&apos;annulation</div>
+                <h3 className="font-serif text-lg text-[#1c1917]">Annulation avant le créneau</h3>
                 <p className="text-xs leading-relaxed text-[#61574b]">
-                  Vous pouvez annuler ou reporter votre séance sans frais jusqu'à 12 heures avant l'heure du cours depuis votre espace cliente ou par téléphone.
+                  Vous pouvez annuler votre réservation avant le début du créneau depuis votre espace cliente. Le crédit réservé est libéré. Pour changer de créneau, annulez puis réservez une place disponible.
                 </p>
               </div>
 

@@ -4,7 +4,6 @@ import { getPlanningService } from "@/lib/planning/server";
 import { ClientShell } from "@/features/clients/client-shell";
 import { AccessErrorView } from "@/features/auth/access-error";
 import { CrmReservationsView } from "@/features/crm/crm-reservations-view";
-import { getRequestTime } from "@/lib/request-time";
 import type { ReservationsPage } from "@/domain/models/planning";
 
 export const runtime = "nodejs";
@@ -18,15 +17,14 @@ export default async function Page() {
   const result = await getPageAccess(["admin"]);
   if (!result.access) return <AccessErrorView message={result.error} />;
 
-  const now = getRequestTime();
   let data: ReservationsPage = { items: [], nextCursor: null };
   let loadError: string | null = null;
 
   try {
     data = await getPlanningService().listReservations(result.access, undefined, 20);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Erreur chargement réservations CRM:", error);
-    loadError = error?.message || String(error);
+    loadError = "Réservations temporairement indisponibles. Actualisez la page pour réessayer.";
   }
 
   return (
@@ -46,16 +44,10 @@ export default async function Page() {
         </div>
       </header>
 
-      {loadError && (
-        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs font-medium text-amber-900 shadow-sm">
-          <strong>Information :</strong> {loadError}
-        </div>
-      )}
-
       <CrmReservationsView
+        initialError={loadError}
         initialItems={data.items}
         initialCursor={data.nextCursor}
-        now={now}
       />
     </ClientShell>
   );

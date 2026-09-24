@@ -21,7 +21,7 @@ export default function CgvPage() {
             className="inline-flex items-center gap-2 rounded-full border border-[#cdae72]/50 px-4 py-2 text-xs font-semibold text-[#38322a] transition-all hover:bg-[#f3e6d3]"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Retour à l'accueil</span>
+            <span>Retour à l&apos;accueil</span>
           </Link>
         </div>
       </header>
@@ -49,7 +49,7 @@ export default function CgvPage() {
               <h2 className="font-serif text-2xl font-normal text-[#1c1917]">Article 1 – Objet & Prestations</h2>
             </div>
             <p className="mt-4 text-sm text-[#61574b]">
-              Les présentes CGV régissent l'ensemble des réservations et abonnements souscrits auprès du studio <strong>Pilates Center Alger</strong>. Le studio propose des cours de Pilates au sol (Mat) et Pilates Reformer, dispensés en séances individuelles ou en cours collectifs d'une durée de <strong>{COURSE_DURATION_MINUTES} minutes</strong> limités à <strong>{COURSE_MAX_CAPACITY} personnes maximum</strong>.
+              Les présentes CGV régissent l&apos;ensemble des réservations et abonnements souscrits auprès du studio <strong>Pilates Center Alger</strong>. Le studio propose des cours de Pilates au sol (Mat) et Pilates Reformer, dispensés en séances individuelles ou en cours collectifs d&apos;une durée de <strong>{COURSE_DURATION_MINUTES} minutes</strong> limités à <strong>{COURSE_MAX_CAPACITY} personnes maximum</strong>.
             </p>
           </section>
 
@@ -60,7 +60,7 @@ export default function CgvPage() {
               <h2 className="font-serif text-2xl font-normal text-[#1c1917]">Article 2 – Tarifs & Règlement en Espèces</h2>
             </div>
             <p className="mt-4 text-sm">
-              Les tarifs sont indiqués en Dinars Algériens (DZD). Les règlements s'effectuent directement au studio à l'accueil en <strong>espèces</strong> (paiement comptant ou versement d'acompte avec solde consigné). Un reçu ou journal d'encaissement est systématiquement attribué à la cliente lors du règlement.
+              Les tarifs sont indiqués en Dinars Algériens (DZD). Les règlements s&apos;effectuent directement au studio à l&apos;accueil en <strong>espèces</strong> (paiement comptant ou versement d&apos;acompte avec solde consigné). Un reçu ou journal d&apos;encaissement est systématiquement attribué à la cliente lors du règlement.
             </p>
           </section>
 
@@ -71,10 +71,10 @@ export default function CgvPage() {
               <h2 className="font-serif text-2xl font-normal text-[#1c1917]">Article 3 – Réservation & Annulation des Cours</h2>
             </div>
             <ul className="mt-4 list-disc pl-5 text-sm space-y-2">
-              <li>Toute réservation s'effectue via l'espace client en ligne ou directement auprès de l'accueil du studio.</li>
-              <li>Toute séance réservée consomme un crédit de votre forfait actif.</li>
-              <li><strong>Annulation anticipée :</strong> L'annulation d'un cours est gratuite si elle intervient dans le respect du délai d'anticipation minimum. Le crédit correspondant est automatiquement restitué sur votre compte.</li>
-              <li><strong>Annulation tardive ou absence :</strong> En cas d'annulation tardive ou d'absence non justifiée, le crédit de la séance reste débité.</li>
+              <li>Toute réservation s&apos;effectue via l&apos;espace client en ligne ou directement auprès de l&apos;accueil du studio.</li>
+              <li>Toute réservation immobilise un crédit d’un forfait valable à la date du créneau. Ce crédit est consommé après la fin de la séance, selon la validation manuelle ou automatique choisie par le centre.</li>
+              <li><strong>Annulation anticipée :</strong> Vous pouvez annuler avant le début du créneau. Le crédit réservé est alors libéré ; la date de validité du forfait reste inchangée.</li>
+              <li><strong>Après le début du créneau :</strong> L’annulation en ligne n’est plus disponible. Contactez le centre pour toute demande de correction. Le suivi des présences et absences est distinct de la validation des crédits.</li>
             </ul>
           </section>
 
@@ -85,7 +85,7 @@ export default function CgvPage() {
               <h2 className="font-serif text-2xl font-normal text-[#1c1917]">Article 4 – Validité des Abonnements & Crédits</h2>
             </div>
             <p className="mt-4 text-sm">
-              Les formules (séances à l'unité, cartes de crédits, abonnements mensuels et trimestriels) comportent une période de validité définie lors de la souscription. Les crédits non consommés à l'expiration de la période de validité ne sont pas remboursables.
+              Les formules (séances à l&apos;unité, cartes de crédits, abonnements mensuels et trimestriels) comportent une période de validité définie lors de la souscription. Les crédits non consommés à l&apos;expiration de la période de validité ne sont pas remboursables.
             </p>
           </section>
 
@@ -96,7 +96,7 @@ export default function CgvPage() {
               <h2 className="font-serif text-2xl font-normal text-[#1c1917]">Article 5 – Horaires & Respect du Règlement</h2>
             </div>
             <p className="mt-4 text-sm">
-              Les clientes et membres s'engagent à respecter les créneaux d'ouverture ainsi que la répartition horaire dédiée aux Femmes et aux Hommes (du Samedi au Jeudi de 10h00 à 20h00). Une tenue de sport adaptée est exigée pour l'accès aux appareils et aux tapis.
+              Les clientes et membres s&apos;engagent à respecter les créneaux d&apos;ouverture ainsi que la répartition horaire dédiée aux Femmes et aux Hommes (du Samedi au Jeudi de 10h00 à 20h00). Une tenue de sport adaptée est exigée pour l&apos;accès aux appareils et aux tapis.
             </p>
           </section>
 

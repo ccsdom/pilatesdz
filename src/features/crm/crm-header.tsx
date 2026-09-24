@@ -58,7 +58,7 @@ export function CrmHeader({
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            {title} · Heure d'Alger (UTC+1)
+            {title} · Heure d&apos;Alger (UTC+1)
           </p>
         </div>
       </div>

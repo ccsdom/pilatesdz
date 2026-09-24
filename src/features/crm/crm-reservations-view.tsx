@@ -10,7 +10,6 @@ import {
   Clock,
   UserCheck,
   UserX,
-  AlertCircle,
   XCircle,
   CheckCircle2,
   Calendar,
@@ -27,16 +26,17 @@ import { SessionPreviewModal } from "@/features/planning/session-preview-modal";
 interface CrmReservationsViewProps {
   initialItems: ReservationRecord[];
   initialCursor: string | null;
-  now: number;
+  initialError?: string | null;
 }
 
 export function CrmReservationsView({
   initialItems,
   initialCursor,
-  now,
+  initialError,
 }: CrmReservationsViewProps) {
   const [items, setItems] = useState<ReservationRecord[]>(initialItems);
   const [nextCursor, setNextCursor] = useState<string | null>(initialCursor);
+  const [loadError, setLoadError] = useState<string | null>(initialError ?? null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [view, setView] = useState<"grid" | "list">("grid");
 
@@ -68,15 +68,17 @@ export function CrmReservationsView({
   const handleLoadMore = async () => {
     if (!nextCursor || loadingMore) return;
     setLoadingMore(true);
+    setLoadError(null);
     try {
       const res = await fetch(`/api/crm/reservations?after=${encodeURIComponent(nextCursor)}`);
-      if (res.ok) {
+      if (!res.ok) throw new Error("load");
+      {
         const data = await res.json();
-        setItems((prev) => [...prev, ...(data.items || [])]);
+        setItems((prev) => Array.from(new Map([...prev, ...data.items].map(item => [item.id, item])).values()));
         setNextCursor(data.nextCursor || null);
       }
     } catch {
-      // Keep state on failure
+      setLoadError("Les réservations n’ont pas pu être chargées. Réessayez ou actualisez la page.");
     } finally {
       setLoadingMore(false);
     }
@@ -87,7 +89,7 @@ export function CrmReservationsView({
     return items.filter((item) => {
       // Search text (client name or course title)
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
+        const q = searchQuery.trim().toLowerCase();
         const matchesClient = item.clientName.toLowerCase().includes(q);
         const matchesTitle = item.sessionTitle.toLowerCase().includes(q);
         if (!matchesClient && !matchesTitle) return false;
@@ -242,11 +244,13 @@ export function CrmReservationsView({
         </div>
       </div>
 
+      {loadError && <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">{loadError} {!nextCursor && <button type="button" onClick={() => window.location.reload()} className="ml-2 underline">Réessayer</button>}</div>}
+      <p className="text-xs text-[#786c5c]">Les filtres portent sur les réservations chargées. Chargez la suite pour étendre les résultats.</p>
       {/* RENDER GRID OR LIST */}
-      {view === "grid" ? (
-        <GridView items={filteredItems} now={now} onPreview={handleOpenPreview} />
+      {loadError && items.length === 0 ? null : view === "grid" ? (
+        <GridView items={filteredItems} onPreview={handleOpenPreview} />
       ) : (
-        <ListView items={filteredItems} now={now} onPreview={handleOpenPreview} />
+        <ListView items={filteredItems} onPreview={handleOpenPreview} />
       )}
 
       {/* LOAD MORE BUTTON */}
@@ -288,11 +292,9 @@ export function CrmReservationsView({
    ========================================================================= */
 function GridView({
   items,
-  now,
   onPreview,
 }: {
   items: ReservationRecord[];
-  now: number;
   onPreview: (item: ReservationRecord) => void;
 }) {
   if (items.length === 0) {
@@ -310,7 +312,6 @@ function GridView({
   return (
     <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
       {items.map((item) => {
-        const ended = item.startsAt <= now;
         const initials = item.clientName
           .split(/\s+/)
           .slice(0, 2)
@@ -428,11 +429,9 @@ function GridView({
    ========================================================================= */
 function ListView({
   items,
-  now,
   onPreview,
 }: {
   items: ReservationRecord[];
-  now: number;
   onPreview: (item: ReservationRecord) => void;
 }) {
   if (items.length === 0) {

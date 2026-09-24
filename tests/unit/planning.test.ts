@@ -130,8 +130,12 @@ it("validates listReservations for administrators only and verifies cursor forma
 
   expect(() => service.listReservations(client)).toThrow();
   expect(() => service.listReservations(admin, "invalid-cursor")).toThrow();
+  expect(() => service.listReservations(admin, "session:../client")).toThrow();
+  expect(() => service.listReservations(admin, "session:client:extra")).toThrow();
+  expect(() => service.listReservations(admin, undefined, 0)).toThrow();
+  expect(() => service.listReservations(admin, undefined, 101)).toThrow();
 
-  service.listReservations(admin, "1789646400000_session1", 20);
-  expect(repository.listReservations).toHaveBeenCalledWith(admin, "1789646400000_session1", 20);
+  service.listReservations(admin, "session1:client1", 20);
+  expect(repository.listReservations).toHaveBeenCalledWith(admin, "session1:client1", 20);
 });
 

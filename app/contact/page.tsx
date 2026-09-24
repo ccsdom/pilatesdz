@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, MapPin, Phone, Clock, Mail, Sparkles } from "lucide-react";
+import { ArrowRight, MapPin, Phone, Clock } from "lucide-react";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { PublicHeader } from "@/components/brand/public-header";
 import { PublicMobileBottomNav } from "@/components/brand/public-mobile-bottom-nav";
@@ -36,7 +36,7 @@ export default function ContactPage() {
             </h1>
             
             <p className="mt-8 text-lg leading-relaxed text-[#61574b] lg:text-xl">
-              Toute l'équipe de Pilates Center Alger est à votre écoute pour répondre à vos questions, vous orienter vers la bonne formule ou planifier votre cours d'essai.
+              Toute l&apos;équipe de Pilates Center Alger est à votre écoute pour répondre à vos questions, vous orienter vers la bonne formule ou planifier votre cours d&apos;essai.
             </p>
           </div>
         </section>
@@ -84,7 +84,7 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <div className="text-xs font-bold uppercase tracking-wider text-[#99702d]">Heures d’Ouverture</div>
-                        <div className="mt-1 text-sm font-medium text-[#1c1917]">Samedi – Jeudi : 09h00 – 19h30</div>
+                        <div className="mt-1 text-sm font-medium text-[#1c1917]">Samedi – Jeudi : 10h00 – 20h00</div>
                         <div className="text-xs text-[#706659]">Créneaux dédiés Femmes & Hommes</div>
                       </div>
                     </div>

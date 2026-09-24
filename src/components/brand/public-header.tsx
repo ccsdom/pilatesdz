@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { Dialog } from "radix-ui";
 import { usePathname } from "next/navigation";
 import { 
   Menu, 
@@ -16,23 +17,22 @@ import {
 import { BrandLockup } from "./brand-lockup";
 
 export function PublicHeader() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-
-  // Close mobile drawer on route change
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
+  const [menuPath, setMenuPath] = useState<string | null>(null);
+  const mobileMenuOpen = menuPath === pathname;
+  const setMobileMenuOpen = (open: boolean) => setMenuPath(open ? pathname : null);
 
   // Lock body scroll when drawer is open
   useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    if (!mobileMenuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const closeOnDesktop = () => { if (desktop.matches) setMenuPath(null); };
+    desktop.addEventListener("change", closeOnDesktop);
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousOverflow;
+      desktop.removeEventListener("change", closeOnDesktop);
     };
   }, [mobileMenuOpen]);
 
@@ -44,7 +44,7 @@ export function PublicHeader() {
   ];
 
   return (
-    <>
+    <Dialog.Root open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
       {/* Top Luxury Bar */}
       <div className="hidden border-b border-[#e7dac8]/40 bg-[#1c1917] px-6 py-2 text-xs text-[#d5ae65] sm:block">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
@@ -54,7 +54,7 @@ export function PublicHeader() {
               Centre Commercial Zemzem, Bir Mourad Raïs · Alger
             </span>
             <span className="text-white/30">•</span>
-            <span className="text-[#e5be78]">Samedi au Jeudi : 09h00 - 19h30</span>
+            <span className="text-[#e5be78]">Samedi au Jeudi : 10h00 - 20h00</span>
           </div>
 
           <div className="flex items-center gap-5">
@@ -105,21 +105,23 @@ export function PublicHeader() {
             </Link>
 
             {/* Mobile Hamburger Button */}
-            <button
+            <Dialog.Trigger asChild><button
               type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="flex h-10 w-10 items-center justify-center rounded-full border border-[#cdae72]/40 bg-white/80 text-[#1c1917] shadow-xs active:scale-90 transition-all lg:hidden"
               aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
             >
               {mobileMenuOpen ? <X className="h-5 w-5 text-[#b7893b]" /> : <Menu className="h-5 w-5" />}
-            </button>
+            </button></Dialog.Trigger>
           </div>
         </div>
       </header>
 
       {/* FULL-SCREEN MOBILE NAVIGATION DRAWER (Native App Experience) */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[#0c0a09]/95 text-white backdrop-blur-2xl animate-fadeIn lg:hidden overflow-y-auto">
+      <Dialog.Portal>
+        <Dialog.Content onClick={(event) => {
+          if (event.target instanceof Element && event.target.closest("a")) setMobileMenuOpen(false);
+        }} aria-describedby={undefined} className="fixed inset-0 z-50 flex flex-col bg-[#0c0a09]/95 text-white backdrop-blur-2xl animate-fadeIn lg:hidden overflow-y-auto">
+          <Dialog.Title className="sr-only">Menu du studio</Dialog.Title>
           {/* Drawer Top Bar */}
           <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
             <BrandLockup light compact />
@@ -217,8 +219,8 @@ export function PublicHeader() {
           <div className="border-t border-white/10 px-6 py-4 text-center text-xs text-white/40">
             © Pilates Center Alger • Force, Équilibre & Harmonie
           </div>
-        </div>
-      )}
-    </>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

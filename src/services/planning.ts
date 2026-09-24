@@ -31,7 +31,8 @@ export function createPlanningService(repository: PlanningRepository) {
     },
     listReservations(actor: Access, after?: string, limit?: number) {
       admin(actor);
-      if (after && !/^\d{1,16}_[a-zA-Z0-9_-]{1,128}$/.test(after)) throw new ManagementError(400, "Curseur invalide.");
+      if (after && !/^[A-Za-z0-9_-]{1,128}:[A-Za-z0-9_-]{1,128}$/.test(after)) throw new ManagementError(400, "Curseur invalide.");
+      if (limit !== undefined && (!Number.isInteger(limit) || limit < 1 || limit > 100)) throw new ManagementError(400, "Taille de page invalide.");
       return repository.listReservations(actor, after, limit);
     },
     create(actor: Access, requestId: string, value: unknown) {

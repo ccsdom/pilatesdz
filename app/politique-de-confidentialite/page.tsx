@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Lock, Database, UserCheck, ShieldAlert, KeyRound } from "lucide-react";
+import { ArrowLeft, Lock, Database, UserCheck, KeyRound } from "lucide-react";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 
 export const metadata = {
@@ -20,7 +20,7 @@ export default function PolitiqueConfidentialitePage() {
             className="inline-flex items-center gap-2 rounded-full border border-[#cdae72]/50 px-4 py-2 text-xs font-semibold text-[#38322a] transition-all hover:bg-[#f3e6d3]"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Retour à l'accueil</span>
+            <span>Retour à l&apos;accueil</span>
           </Link>
         </div>
       </header>
@@ -36,7 +36,7 @@ export default function PolitiqueConfidentialitePage() {
           Politique de Confidentialité
         </h1>
         <p className="mt-4 text-base text-[#61574b]">
-          Pilates Center s'engage à respecter la vie privée et la confidentialité de l'ensemble de ses clientes et utilisateurs.
+          Pilates Center s&apos;engage à respecter la vie privée et la confidentialité de l&apos;ensemble de ses clientes et utilisateurs.
         </p>
 
         <div className="mt-12 space-y-10 text-[#403930] leading-relaxed">
@@ -54,7 +54,7 @@ export default function PolitiqueConfidentialitePage() {
               <li>Nom, prénom et coordonnées de contact (e-mail, téléphone).</li>
               <li>Historique des inscriptions aux cours et assiduité aux séances.</li>
               <li>Abonnements, crédits attribués et règlements consignés.</li>
-              <li>Identifiants de connexion chiffrés pour l'accès à l'espace cliente.</li>
+              <li>Identifiants de connexion chiffrés pour l&apos;accès à l&apos;espace cliente.</li>
             </ul>
           </section>
 
@@ -65,13 +65,13 @@ export default function PolitiqueConfidentialitePage() {
               <h2 className="font-serif text-2xl font-normal text-[#1c1917]">2. Utilisation & Finalités</h2>
             </div>
             <p className="mt-4 text-sm">
-              Vos données sont strictement réservées à l'usage interne du studio Pilates Center Alger pour :
+              Vos données sont strictement réservées à l&apos;usage interne du studio Pilates Center Alger pour :
             </p>
             <ul className="mt-3 list-disc pl-5 text-sm space-y-1.5">
               <li>Permettre l’accès à votre espace personnel et la réservation de cours.</li>
               <li>Assurer la gestion du nombre de places limité ({`4 à 6`} participantes par cours).</li>
-              <li>Gérer la comptabilité interne des encaissements en espèces et l'attribution des crédits.</li>
-              <li>Vous informer en cas de modification d'horaires ou d'imprévu sur un cours réservé.</li>
+              <li>Gérer la comptabilité interne des encaissements en espèces et l&apos;attribution des crédits.</li>
+              <li>Vous informer en cas de modification d&apos;horaires ou d&apos;imprévu sur un cours réservé.</li>
             </ul>
           </section>
 
@@ -82,7 +82,7 @@ export default function PolitiqueConfidentialitePage() {
               <h2 className="font-serif text-2xl font-normal text-[#1c1917]">3. Sécurité des Accès & Cookies</h2>
             </div>
             <p className="mt-4 text-sm">
-              La connexion à l'espace membre s'effectue via un cookie de session sécurisé (`HttpOnly`) d'une durée de 8 heures. Nous n'utilisons aucun cookie d'analyse ou de traçage publicitaire intrusif.
+              La connexion à l&apos;espace membre s&apos;effectue via un cookie de session sécurisé (`HttpOnly`) d&apos;une durée de 8 heures. Nous n&apos;utilisons aucun cookie d&apos;analyse ou de traçage publicitaire intrusif.
             </p>
           </section>
 
@@ -93,7 +93,7 @@ export default function PolitiqueConfidentialitePage() {
               <h2 className="font-serif text-2xl font-normal text-[#1c1917]">4. Droits des Clientes</h2>
             </div>
             <p className="mt-4 text-sm">
-              Conformément à la réglementation sur la protection des données, vous disposez à tout moment d’un droit d’accès, de rectification et de suppression de vos données personnelles. Pour toute demande, il vous suffit de vous adresser directement à l'accueil du studio ou de nous contacter au <strong>05 53 02 17 14</strong>.
+              Conformément à la réglementation sur la protection des données, vous disposez à tout moment d’un droit d’accès, de rectification et de suppression de vos données personnelles. Pour toute demande, il vous suffit de vous adresser directement à l&apos;accueil du studio ou de nous contacter au <strong>05 53 02 17 14</strong>.
             </p>
           </section>
 

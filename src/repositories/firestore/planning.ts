@@ -102,96 +102,42 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
       });
     },
     async listReservations(actor, after, limit = 20) {
-      if (actor.role !== "admin" || !/^[a-z0-9-]+$/.test(actor.centerId)) throw new AccessError(403);
-      const rootStr = `centers/${actor.centerId}`;
-
-      let query = db.collection(`${rootStr}/sessions`)
-        .orderBy("startsAt", "desc")
-        .limit(30);
-
-      if (after) {
-        const split = after.indexOf("_");
-        if (split > 0) {
-          query = query.startAfter(Number(after.slice(0, split)));
-        } else if (Number.isFinite(Number(after))) {
-          query = query.startAfter(Number(after));
+      return db.runTransaction(async tx => {
+        await identity(tx, actor, true);
+        const base = root(actor);
+        // Query bookings themselves: empty future slots must never hide reservations.
+        // Document paths include both session and client, so ties cannot lose rows.
+        let query = db.collectionGroup("bookings").where("centerId", "==", actor.centerId)
+          .orderBy(FieldPath.documentId()).limit(limit + 1);
+        if (after) {
+          const [sessionId, clientId, extra] = after.split(":");
+          if (extra !== undefined) throw new ManagementError(400, "Page invalide.");
+          const path = `${base}/sessions/${safeId(sessionId)}/bookings/${safeId(clientId)}`;
+          query = query.startAfter(db.doc(path));
         }
-      }
-
-      const snapshot = await query.get();
-      if (snapshot.empty) {
-        return { items: [], nextCursor: null };
-      }
-
-      const items: any[] = [];
-      const clientCache = new Map<string, string>();
-
-      for (const doc of snapshot.docs) {
-        let session;
-        try {
-          session = decode(actor, doc.id, doc.data());
-        } catch {
-          continue;
-        }
-
-        let bookingsSnap;
-        try {
-          bookingsSnap = await db.collection(`${rootStr}/sessions/${doc.id}/bookings`).limit(35).get();
-        } catch {
-          continue;
-        }
-
-        for (const bDoc of bookingsSnap.docs) {
-          try {
-            const bData = bDoc.data();
-            if (!bData || !["confirmed", "cancelled"].includes(bData.status)) continue;
-
-            const clientId = bDoc.id;
-            if (!clientCache.has(clientId)) {
-              try {
-                const profileDoc = await db.doc(`${rootStr}/clients/${safeId(clientId)}`).get();
-                clientCache.set(clientId, profileDoc.data()?.name || "Cliente");
-              } catch {
-                clientCache.set(clientId, "Cliente");
-              }
-            }
-
-            let attendanceStatus: "unmarked" | "present" | "absent" | "excused" = "unmarked";
-            try {
-              if (bData.attendance) {
-                attendanceStatus = readAttendance(bData.attendance).status;
-              }
-            } catch {
-              attendanceStatus = "unmarked";
-            }
-
-            items.push({
-              id: `${session.id}_${clientId}`,
-              sessionId: session.id,
-              sessionTitle: session.title,
-              startsAt: session.startsAt,
-              durationMinutes: session.durationMinutes,
-              instructor: session.instructor,
-              sessionStatus: session.status,
-              clientId,
-              clientName: clientCache.get(clientId) || "Cliente",
-              bookingStatus: bData.status,
-              attendanceStatus,
-              bookedAt: bData.bookedAt || session.startsAt,
-            });
-          } catch {
-            // Ignore any single corrupted booking record
-            continue;
-          }
-        }
-      }
-
-      items.sort((a, b) => b.startsAt - a.startsAt);
-      const pageItems = items.slice(0, limit);
-      const lastSession = snapshot.docs.at(-1);
-      const nextCursor = snapshot.size >= 30 && lastSession ? `${lastSession.data().startsAt}_${lastSession.id}` : null;
-
-      return { items: pageItems, nextCursor };
+        const snapshot = await tx.get(query);
+        const docs = snapshot.docs.slice(0, limit);
+        const items = await Promise.all(docs.map(async doc => {
+          const booking = doc.data();
+          const sessionId = safeId(booking.sessionId), clientId = safeId(booking.clientId);
+          if (doc.ref.path !== `${base}/sessions/${sessionId}/bookings/${clientId}`) throw new Error("Invalid reservation identity");
+          const [sessionDoc, profileDoc] = await tx.getAll(sessionRef(actor, sessionId), profileRef(actor, clientId));
+          const session = decode(actor, sessionId, sessionDoc.data());
+          bookingStatus(session, clientId, booking);
+          const profile = profileDoc.data();
+          if (profile && (profile.id !== clientId || profile.centerId !== actor.centerId)) throw new Error("Invalid client identity");
+          return {
+            id: `${sessionId}_${clientId}`, sessionId, clientId,
+            sessionTitle: session.title, startsAt: session.startsAt,
+            durationMinutes: session.durationMinutes, instructor: session.instructor,
+            sessionStatus: session.status, clientName: profile?.name || "Fiche cliente indisponible",
+            bookingStatus: booking.status as "confirmed" | "cancelled",
+            attendanceStatus: readAttendance(booking.attendance).status,
+            bookedAt: booking.bookedAt ?? session.startsAt,
+          };
+        }));
+        return { items, nextCursor: snapshot.size > limit ? `${docs.at(-1)!.ref.parent.parent!.id}:${docs.at(-1)!.id}` : null };
+      });
     },
     async create(actor, id, input) {
       return db.runTransaction(async (tx) => {

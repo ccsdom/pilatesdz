@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Sparkles, Clock, Tag, Calendar, Compass } from "lucide-react";
+import { Home, Sparkles, Clock, Tag, Compass } from "lucide-react";
 
 export function PublicMobileBottomNav() {
   const pathname = usePathname();

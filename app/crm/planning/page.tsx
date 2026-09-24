@@ -1,14 +1,7 @@
 import Link from "next/link";
 import { getPageAccess } from "@/lib/auth/page-access";
 import { getPlanningService } from "@/lib/planning/server";
-import {
-  studioDay,
-  weekRange,
-  monthRange,
-  getDaysOfWeek,
-  getDaysOfMonthGrid,
-  type PilatesSession,
-} from "@/domain/models/planning";
+import { studioDay, getDaysOfWeek, getDaysOfMonthGrid, type PilatesSession } from "@/domain/models/planning";
 import { ManagementError } from "@/domain/ports/access-management";
 import { ClientShell } from "@/features/clients/client-shell";
 import { AccessErrorView } from "@/features/auth/access-error";

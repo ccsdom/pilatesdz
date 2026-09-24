@@ -32,15 +32,16 @@ export function LoginForm() {
       await signOut(auth);
       router.replace(result.destination === "/crm" ? "/crm" : "/espace-cliente");
       router.refresh();
-    } catch (err: any) {
+    } catch (err) {
       console.error("Login attempt failed:", err);
-      const code = err?.code || "";
+      const code = err && typeof err === "object" && "code" in err ? err.code : "";
+      const message = err instanceof Error ? err.message : "";
       if (code === "auth/invalid-credential" || code === "auth/user-not-found" || code === "auth/wrong-password") {
         setError("Identifiants incorrects. Veuillez vérifier l'adresse e-mail et le mot de passe.");
-      } else if (code === "auth/network-request-failed" || err?.message?.includes("fetch")) {
+      } else if (code === "auth/network-request-failed" || message.includes("fetch")) {
         setError("Le service d'authentification est indisponible ou non démarré (émulateur local).");
       } else {
-        setError(err?.message || "Connexion impossible. Vérifiez vos identifiants ou réessayez plus tard.");
+        setError(message || "Connexion impossible. Vérifiez vos identifiants ou réessayez plus tard.");
       }
     } finally {
       // Server cookie owns the session; no refresh token is kept in browser storage.

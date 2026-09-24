@@ -33,8 +33,8 @@ export function ContactForm() {
       }
 
       setSubmitted(true);
-    } catch (err: any) {
-      setErrorMessage(err.message || "Une erreur est survenue lors de l'envoi.");
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Une erreur est survenue lors de l'envoi.");
     } finally {
       setLoading(false);
     }
@@ -70,7 +70,7 @@ export function ContactForm() {
     <div className="rounded-3xl border border-[#e5dacf] bg-white p-8 lg:p-10 shadow-sm">
       <h2 className="font-serif text-3xl font-light text-[#1c1917]">Envoyez-nous un message</h2>
       <p className="mt-2 text-sm text-[#61574b]">
-        Complétez le formulaire ci-dessous, vos informations seront transmises directement à l'équipe du studio.
+        Complétez le formulaire ci-dessous, vos informations seront transmises directement à l&apos;équipe du studio.
       </p>
 
       {errorMessage && (
@@ -134,8 +134,8 @@ export function ContactForm() {
             onChange={(e) => setSubject(e.target.value)}
             className="w-full rounded-2xl border border-[#dccbb0] bg-[#faf7f2] px-4 py-3.5 text-sm text-[#1c1917] focus:border-[#b7893b] focus:bg-white focus:outline-none transition-all"
           >
-            <option value="Demande d'information générale">Demande d'information générale</option>
-            <option value="Réservation d'un cours d'essai">Réservation d'un cours d'essai</option>
+            <option value="Demande d'information générale">Demande d&apos;information générale</option>
+            <option value="Réservation d'un cours d'essai">Réservation d&apos;un cours d&apos;essai</option>
             <option value="Renseignements sur les Abonnements">Renseignements sur les Abonnements</option>
             <option value="Cours Individuel 1-on-1">Cours Individuel 1-on-1</option>
           </select>
