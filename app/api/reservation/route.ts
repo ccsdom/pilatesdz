@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       const previous = (await tx.get(receipt)).data();
       if (previous) {
         if (previous.fingerprint !== fingerprint) throw new ManagementError(409, "Cette demande a déjà été utilisée. Actualisez la page.");
-        return { bookingReference: previous.reference as string, reservationId: receipt.id, email: null, name: null, uid: null };
+        return { bookingReference: previous.reference as string, reservationId: receipt.id, clientId: previous.clientId as string };
       }
       const claim = await tx.get(identity);
       const emailIdentity = emailClaim ? await tx.get(emailClaim) : null;
@@ -69,8 +69,7 @@ export async function POST(request: NextRequest) {
       if (available.available < 1) throw new ManagementError(409, "Ce créneau n’est plus disponible. Choisissez un autre horaire.");
       const profile = { name: data.clientName, email: data.clientEmail ?? `${normalizedPhone}@temp.pilates.dz`, phone: normalizedPhone, status: "active" as const };
       const invitationUid = `pc_${createHash("sha256").update(`${centerId}/${clientRef.id}`).digest("hex")}`;
-      tx.create(clientRef, { ...profile, id: clientRef.id, centerId, authUid: invitationUid, invitationUid: null, version: 1, createdAt: now, updatedAt: now, searchPrefixes: clientSearchPrefixes(profile) });
-      tx.create(root.collection("members").doc(invitationUid), { uid: invitationUid, clientId: clientRef.id, centerId, role: "client", active: true, email: profile.email, name: profile.name, createdAt: now, createdBy: "online_booking" });
+      tx.create(clientRef, { ...profile, id: clientRef.id, centerId, authUid: null, invitationUid: data.clientEmail ? invitationUid : null, version: 1, createdAt: now, updatedAt: now, searchPrefixes: clientSearchPrefixes(profile) });
       tx.create(identity, { clientId: clientRef.id, createdAt: now });
       if (emailClaim) tx.create(emailClaim, { clientId: clientRef.id, createdAt: now });
       if (occupancy.some(item => item.id === selected.id)) tx.update(sessionRef, { bookedCount: available.reserved + 1, updatedAt: now });
@@ -78,19 +77,48 @@ export async function POST(request: NextRequest) {
       tx.create(sessionRef.collection("bookings").doc(clientRef.id), { sessionId: selected.id, centerId, clientId: clientRef.id, status: "confirmed", bookedAt: now, updatedAt: now, updatedBy: "online_booking", attendance: { status: "unmarked", version: 1 } });
       const reference = `PIL-${data.date.slice(0, 4)}-${data.requestId.toUpperCase()}`;
       tx.create(receipt, { id: receipt.id, fingerprint, reference, centerId, clientId: clientRef.id, clientName: data.clientName, clientPhone: normalizedPhone, clientEmail: data.clientEmail ?? null, clientLevel: data.clientLevel, practiceId: offer.id, practiceName: offer.label, priceDzd: offer.priceDzd, gender: data.gender, date: data.date, slot: selected.time, sessionId: selected.id, paymentMethod: "studio", status: "confirmed", createdAt: now, updatedAt: now, source: "website_online_booking" });
-      return { bookingReference: reference, reservationId: receipt.id, email: profile.email, name: profile.name, uid: invitationUid };
+      return { bookingReference: reference, reservationId: receipt.id, clientId: clientRef.id };
     });
 
     let invitationUrl: string | null = null;
-    if (result.email && result.name && result.uid) {
+    let accessStatus: "no-email" | "pending" | "invitation-pending" | "ready" = data.clientEmail ? "pending" : "no-email";
+    let emailAccepted = false;
+    if (data.clientEmail) {
       try {
+        const profileRef = root.collection("clients").doc(result.clientId);
+        const profile = (await profileRef.get()).data();
+        const uid = profile?.authUid ?? profile?.invitationUid;
+        if (!uid || profile?.email !== data.clientEmail || profile?.status !== "active") throw new Error("Access requires studio review");
         const provisioner = getAccountProvisioner();
-        await provisioner.create(result.email, result.name, result.uid);
-        invitationUrl = await provisioner.invitation(result.email);
-      } catch { /* if auth account creation encounters existing record, keep reservation confirmed */ }
+        await provisioner.create(profile.email, profile.name, uid);
+        // Link only after Auth succeeds. Never reactivate an access disabled by the manager.
+        await db.runTransaction(async tx => {
+          const current = (await tx.get(profileRef)).data();
+          const memberRef = root.collection("members").doc(uid);
+          const member = await tx.get(memberRef);
+          if (!current || current.email !== data.clientEmail || current.status !== "active" || (current.authUid ?? current.invitationUid) !== uid) throw new Error("Profile changed");
+          if (member.exists) {
+            const value = member.data()!;
+            if (value.uid !== uid || value.clientId !== result.clientId || value.centerId !== centerId || value.role !== "client" || !value.active) throw new Error("Access unavailable");
+          } else {
+            tx.create(memberRef, { uid, clientId: result.clientId, centerId, role: "client", active: true, email: current.email, name: current.name, createdAt: Date.now(), createdBy: "online_booking" });
+          }
+          if (!current.authUid) tx.update(profileRef, { authUid: uid, invitationUid: null, updatedAt: Date.now() });
+        });
+        accessStatus = "invitation-pending";
+        const previous = (await receipt.get()).data();
+        if (previous?.invitationEmailAccepted === data.clientEmail) {
+          emailAccepted = true;
+        } else {
+          invitationUrl = await provisioner.invitation(data.clientEmail);
+          emailAccepted = invitationUrl === null;
+          if (emailAccepted) await receipt.update({ invitationEmailAccepted: data.clientEmail });
+        }
+        accessStatus = "ready";
+      } catch { /* The booking remains confirmed; the response reports the incomplete access step. */ }
     }
 
-    return json({ success: true, bookingReference: result.bookingReference, reservationId: result.reservationId, invitationUrl }, 201);
+    return json({ success: true, bookingReference: result.bookingReference, reservationId: result.reservationId, invitationUrl, accessStatus, emailAccepted }, 201);
   } catch (error) {
     if (error instanceof ManagementError) return json({ error: error.message }, error.status);
     return json({ error: "Réservation non confirmée. Réessayez avec les mêmes informations ou contactez le studio." }, 503);

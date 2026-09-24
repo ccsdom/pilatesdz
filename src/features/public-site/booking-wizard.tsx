@@ -95,6 +95,9 @@ export function BookingWizard() {
   const [formError, setFormError] = useState("");
   const [bookingReference, setBookingReference] = useState("");
   const [invitationUrl, setInvitationUrl] = useState<string | null>(null);
+  const [accessStatus, setAccessStatus] = useState("pending");
+  const [emailAccepted, setEmailAccepted] = useState(false);
+  const [activationError, setActivationError] = useState("");
 
   const day = selectedDate.toISOString().slice(0, 10);
   const availabilityKey = `${day}/${gender}`;
@@ -171,6 +174,8 @@ export function BookingWizard() {
       }
 
       setBookingReference(data.bookingReference);
+      setAccessStatus(data.accessStatus ?? "pending");
+      setEmailAccepted(data.emailAccepted === true);
       if (typeof data.invitationUrl === "string") setInvitationUrl(data.invitationUrl);
       setStep(5); // Go to Confirmation step
     } catch (err: unknown) {
@@ -178,6 +183,22 @@ export function BookingWizard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const retryActivation = async () => {
+    if (!requestRef.current || loading) return;
+    setLoading(true);
+    setActivationError("");
+    try {
+      const response = await fetch("/api/reservation", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...JSON.parse(requestRef.current.body), requestId: requestRef.current.id }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error("Votre réservation reste confirmée. L’activation n’a pas pu être reprise ; contactez le studio.");
+      setAccessStatus(result.accessStatus ?? "pending");
+      setEmailAccepted(result.emailAccepted === true);
+      setInvitationUrl(typeof result.invitationUrl === "string" ? result.invitationUrl : null);
+    } catch (error) {
+      setActivationError(error instanceof Error ? error.message : "Activation indisponible. Contactez le studio.");
+    } finally { setLoading(false); }
   };
 
   const selectedDateFr = formatDateFr(selectedDate);
@@ -567,7 +588,7 @@ export function BookingWizard() {
 
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-[#786c5e] mb-2">
-                      Adresse E-mail
+                      Adresse E-mail (facultative)
                     </label>
                     <input
                       type="email"
@@ -576,6 +597,7 @@ export function BookingWizard() {
                       placeholder="votre.email@exemple.com"
                       className="w-full rounded-2xl border border-[#dccbb0] bg-[#faf7f2] px-4 py-3.5 text-sm text-[#1c1917] focus:border-[#b7893b] focus:bg-white focus:outline-none transition-all"
                     />
+                    <p className="mt-2 text-xs text-[#61574b]">Nécessaire pour recevoir votre accès et gérer vos réservations en ligne. Sans e-mail, contactez le studio pour activer votre espace.</p>
                   </div>
                 </div>
 
@@ -783,7 +805,9 @@ export function BookingWizard() {
                 <span>Activer votre espace cliente</span>
               </div>
               <p className="text-[#61574b] leading-relaxed">
-                Un compte client a été automatiquement créé avec votre adresse e-mail {clientEmail ? <strong>({clientEmail})</strong> : null}. Définissez votre mot de passe pour gérer vos cours et vos forfaits.
+                {accessStatus === "no-email" ? "Votre réservation est confirmée. Aucun accès en ligne n’a été créé sans adresse e-mail. Contactez le studio pour compléter votre fiche et activer votre espace."
+                  : accessStatus === "pending" ? "Votre réservation est confirmée, mais votre accès en ligne n’est pas encore prêt. Réessayez l’activation ou contactez le studio."
+                  : "Votre accès en ligne est créé. Définissez votre mot de passe pour gérer vos réservations et vos forfaits."}
               </p>
               {invitationUrl ? (
                 <a
@@ -793,11 +817,13 @@ export function BookingWizard() {
                   <span>Créer mon mot de passe</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </a>
-              ) : (
+              ) : emailAccepted ? (
                 <p className="text-[11px] font-medium text-[#8b652b]">
-                  Un e-mail de réinitialisation vous a été transmis. Vous pouvez également cliquer sur &quot;Mot de passe oublié&quot; depuis la page de connexion.
+                  La demande d’envoi du lien à {clientEmail} a été acceptée. Vérifiez votre boîte de réception et vos courriers indésirables. Vous pouvez aussi utiliser « Mot de passe oublié » depuis la page de connexion.
                 </p>
-              )}
+              ) : accessStatus === "invitation-pending" ? <p>L’envoi du lien n’est pas confirmé. Attendez une minute avant de réessayer, ou utilisez « Mot de passe oublié » depuis la page de connexion.</p> : null}
+              {(accessStatus === "pending" || accessStatus === "invitation-pending") && <button type="button" disabled={loading} onClick={retryActivation} className="rounded-xl bg-[#1c1917] px-5 py-3 text-white disabled:opacity-50">{loading ? "Activation en cours…" : "Réessayer l’activation"}</button>}
+              {activationError && <p role="alert">{activationError}</p>}
             </div>
           </div>
 

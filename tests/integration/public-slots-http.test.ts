@@ -16,6 +16,52 @@ beforeAll(() => {
 });
 afterAll(async () => { if (app) await deleteApp(app); });
 
+it("creates a real linked Auth account and resumes an interrupted provisioning without a second booking", async () => {
+  const body = { ...bodies[0], requestId: randomUUID(), clientEmail: "activation-retry@example.test", clientPhone: "0777710001", slot: "12:00 - 13:00" };
+  // An unrelated existing Auth account must never be taken over.
+  const unrelated = await getAuth(app).createUser({ email: body.clientEmail });
+  const first = await post(body); expect(first.status).toBe(201);
+  expect(await first.json()).toMatchObject({ accessStatus: "pending", emailAccepted: false, invitationUrl: null });
+  const db = getFirestore(app);
+  const receiptRef = db.doc(`centers/alger/public_reservations/${body.requestId}`);
+  const receipt = (await receiptRef.get()).data()!;
+  const profileRef = db.doc(`centers/alger/clients/${receipt.clientId}`);
+  const pending = (await profileRef.get()).data()!;
+  expect(pending.authUid).toBeNull(); expect(pending.invitationUid).toBeTruthy();
+  expect((await db.doc(`centers/alger/members/${pending.invitationUid}`).get()).exists).toBe(false);
+  // Remove the conflict in the emulator only, then replay the same booking request.
+  await getAuth(app).deleteUser(unrelated.uid);
+  const retry = await post(body); expect(retry.status).toBe(201);
+  const result = await retry.json();
+  expect(result).toMatchObject({ accessStatus: "ready", emailAccepted: false, reservationId: body.requestId });
+  expect(result.invitationUrl).toContain("/connexion/mot-de-passe#");
+  const linked = (await profileRef.get()).data()!;
+  expect(linked.authUid).toBe(pending.invitationUid); expect(linked.invitationUid).toBeNull();
+  expect((await getAuth(app).getUser(linked.authUid)).email).toBe(body.clientEmail);
+  const memberRef = db.doc(`centers/alger/members/${linked.authUid}`);
+  expect((await memberRef.get()).data()).toMatchObject({ active: true, role: "client", clientId: receipt.clientId });
+  const session = db.doc(`centers/alger/sessions/${receipt.sessionId}`);
+  expect((await session.get()).data()?.bookedCount).toBe(1);
+  expect((await session.collection("bookings").get()).size).toBe(1);
+  await memberRef.update({ active: false });
+  expect(await (await post(body)).json()).toMatchObject({ accessStatus: "pending", invitationUrl: null });
+  expect((await memberRef.get()).data()?.active).toBe(false);
+});
+
+it("confirms a phone-only booking without inventing an Auth account or email delivery", async () => {
+  const { clientEmail: _email, ...base } = bodies[0];
+  void _email;
+  const body = { ...base, requestId: randomUUID(), clientPhone: "0777710002", slot: "13:00 - 14:00" };
+  const response = await post(body); expect(response.status).toBe(201);
+  expect(await response.json()).toMatchObject({ accessStatus: "no-email", emailAccepted: false, invitationUrl: null });
+  const db = getFirestore(app);
+  const receipt = (await db.doc(`centers/alger/public_reservations/${body.requestId}`).get()).data()!;
+  const profile = (await db.doc(`centers/alger/clients/${receipt.clientId}`).get()).data()!;
+  expect(profile).toMatchObject({ authUid: null, invitationUid: null });
+  await expect(getAuth(app).getUserByEmail(profile.email)).rejects.toMatchObject({ code: "auth/user-not-found" });
+  expect(await (await post(body)).json()).toMatchObject({ accessStatus: "no-email" });
+});
+
 it("limits five simultaneous first visits to four places, atomically and idempotently", async () => {
   const before = await availability();
   expect(before.status).toBe(200);
