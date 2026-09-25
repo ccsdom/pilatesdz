@@ -91,7 +91,7 @@ export function CrmHeader({
             <DropdownMenuGroup>
               <DropdownMenuItem asChild><Link href="/crm/horaires" className="flex items-center gap-2.5 px-2.5 py-2 text-sm"><Clock className="h-4 w-4 text-[#b7893b]" />Horaires du centre</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link href="/crm/reservations" className="flex items-center gap-2.5 px-2.5 py-2 text-sm"><Receipt className="h-4 w-4 text-[#b7893b]" />Réservations</Link></DropdownMenuItem>
-              {role === "admin" && <DropdownMenuItem asChild>
+              {(role === "admin" || role === "manager") && <DropdownMenuItem asChild>
                 <Link
                   href="/crm/acces"
                   className="flex items-center gap-2.5 px-2.5 py-2 text-sm cursor-pointer rounded-lg"
@@ -178,7 +178,7 @@ export function CrmHeader({
               </div>
             </div>
             <DropdownMenuGroup className="mt-1">
-              {role === "admin" && <DropdownMenuItem asChild>
+              {(role === "admin" || role === "manager") && <DropdownMenuItem asChild>
                 <Link
                   href="/crm/acces"
                   className="flex items-center gap-2 px-2.5 py-2 text-sm cursor-pointer rounded-lg"

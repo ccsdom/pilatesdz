@@ -11,7 +11,7 @@ import { studioDay, STUDIO_TIME_ZONE } from "@/domain/models/planning";
 import { getRequestTime } from "@/lib/request-time";
 import { summarizeDay } from "@/domain/models/dashboard";
 import { ManagementError } from "@/domain/ports/access-management";
-import type { Access } from "@/domain/models/access";
+import { isCenterOperator, type Access } from "@/domain/models/access";
 import { PendingAttendance } from "@/features/planning/pending-attendance";
 
 async function AttendanceSummary({ access, at }: { access: Access; at: number }) {
@@ -47,7 +47,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   const dayLabel = new Intl.DateTimeFormat("fr-FR", { timeZone: STUDIO_TIME_ZONE, weekday: "long", day: "numeric", month: "long" }).format(now);
   return (
     <ClientShell centerId={result.access.centerId} active="dashboard">
-      <CrmPreview canManageAccess={result.access.role === "admin"} analytics={<DashboardAnalytics access={result.access} month={month} />} attendance={<><AttendanceSummary access={result.access} at={now} /><section className="rounded-2xl border border-[#ded4c3] dark:border-[#332e26] bg-[#fffdf9] dark:bg-[#181613] p-5"><div className="flex items-center gap-2 mb-1"><WalletCards className="h-5 w-5 text-[#8d6729] dark:text-[#d5ae65]" /><h2 className="font-serif text-2xl">Suivi des forfaits</h2></div><p className="my-3 text-sm">Repérez les échéances des sept prochains jours et les crédits faibles.</p><Link href="/crm/forfaits/suivi" className="inline-flex items-center gap-1.5 text-sm font-medium text-[#8d6729] dark:text-[#d5ae65] underline"><WalletCards className="h-4 w-4" />Consulter les clientes à suivre</Link></section></>} summary={summary} dayLabel={dayLabel} />
+      <CrmPreview canManageAccess={isCenterOperator(result.access.role)} analytics={<DashboardAnalytics access={result.access} month={month} />} attendance={<><AttendanceSummary access={result.access} at={now} /><section className="rounded-2xl border border-[#ded4c3] dark:border-[#332e26] bg-[#fffdf9] dark:bg-[#181613] p-5"><div className="flex items-center gap-2 mb-1"><WalletCards className="h-5 w-5 text-[#8d6729] dark:text-[#d5ae65]" /><h2 className="font-serif text-2xl">Suivi des forfaits</h2></div><p className="my-3 text-sm">Repérez les échéances des sept prochains jours et les crédits faibles.</p><Link href="/crm/forfaits/suivi" className="inline-flex items-center gap-1.5 text-sm font-medium text-[#8d6729] dark:text-[#d5ae65] underline"><WalletCards className="h-4 w-4" />Consulter les clientes à suivre</Link></section></>} summary={summary} dayLabel={dayLabel} />
     </ClientShell>
   );
 }

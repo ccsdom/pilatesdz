@@ -33,7 +33,7 @@ export function ClientShell({ centerId, children, active = "clients" }: { center
           <Link href="/crm/encaissements" aria-current={active === "cash" ? "page" : undefined} className={itemClass(active === "cash")}><CreditCard size={18} />Encaissements</Link>
           <Link href="/crm/clientes" aria-current={active === "clients" ? "page" : undefined} className={itemClass(active === "clients")}><UsersRound size={18} />Clientes</Link>
           <Link href="/crm/horaires" aria-current={active === "opening" ? "page" : undefined} className={itemClass(active === "opening")}><CalendarDays size={18} />Horaires du centre</Link>
-          {role === "admin" && <Link href="/crm/acces" aria-current={active === "access" ? "page" : undefined} className={itemClass(active === "access")}><KeyRound size={18} />Gestion des accès</Link>}
+          {(role === "admin" || role === "manager") && <Link href="/crm/acces" aria-current={active === "access" ? "page" : undefined} className={itemClass(active === "access")}><KeyRound size={18} />Gestion des accès</Link>}
         </nav>
       </aside>
 

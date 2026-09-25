@@ -55,9 +55,10 @@ it("returns an email acknowledgement without an action link for cloud invitation
   await expect(service.invitation(admin, "client")).resolves.toEqual({ invitationUrl: null, emailAccepted: true });
 });
 
-it.each(["client", "manager"] as const)("denies %s all access operations before touching accounts", async role => {
+it("denies client role all access operations before touching accounts", async () => {
   const { service, accounts, members } = setup();
-  const actor: Access = { ...admin, role };
+  const actor: Access = { ...admin, role: "client" };
+  await expect(service.invite(actor, "c@example.test", "C")).rejects.toMatchObject({ status: 403 });
   await expect(service.inviteManager(actor, "team@example.test", "Team")).rejects.toMatchObject({ status: 403 });
   await expect(service.reactivate(actor, "someone")).rejects.toMatchObject({ status: 403 });
   await expect(service.deactivate(actor, "someone")).rejects.toMatchObject({ status: 403 });
@@ -65,6 +66,13 @@ it.each(["client", "manager"] as const)("denies %s all access operations before 
   expect(accounts.create).not.toHaveBeenCalled();
   expect(members.reserveManager).not.toHaveBeenCalled();
   expect(members.reactivate).not.toHaveBeenCalled();
+});
+
+it("allows manager role to manage client access while denying manager invitations", async () => {
+  const { service, accounts, members } = setup();
+  const manager: Access = { ...admin, role: "manager" };
+  await expect(service.invite(manager, "x@pilates.test", "X")).resolves.toEqual({ uid: "new-client", invitationUrl: "local-link", emailAccepted: false });
+  await expect(service.inviteManager(manager, "team@example.test", "Team")).rejects.toMatchObject({ status: 403 });
 });
 
 it("reserves manager identity before provisioning and sends an invitation after attaching membership", async () => {

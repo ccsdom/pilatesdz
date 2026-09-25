@@ -13,8 +13,12 @@ export function accessRepository(db: Firestore): AccessRepository {
     const data = (await tx.get(ref(actor, actor.uid))).data();
     if (data?.uid !== actor.uid || data.centerId !== actor.centerId || data.role !== "admin" || data.active !== true) throw new AccessError(403);
   }
+  async function operator(tx: Transaction, actor: Access) {
+    const data = (await tx.get(ref(actor, actor.uid))).data();
+    if (data?.uid !== actor.uid || data.centerId !== actor.centerId || !["admin", "manager"].includes(data.role) || data.active !== true) throw new AccessError(403);
+  }
   async function client(tx: Transaction, actor: Access, uid: string): Promise<ClientAccess> {
-    await administrator(tx, actor);
+    await operator(tx, actor);
     const data = (await tx.get(ref(actor, uid))).data();
     if (!data) throw new ManagementError(404, "Accès introuvable dans ce centre.");
     if (data.uid !== uid || data.centerId !== actor.centerId || !["client", "manager"].includes(data.role) || typeof data.active !== "boolean") throw new AccessError(403);
@@ -55,6 +59,7 @@ export function accessRepository(db: Firestore): AccessRepository {
       await db.runTransaction(async tx => {
         const member = await client(tx, actor, uid);
         if (actor.uid === uid) throw new AccessError(403);
+        if (member.role === "manager" && actor.role !== "admin") throw new ManagementError(403, "Seul un administrateur peut modifier l’accès d’un manager.");
         if (member.role === "client") {
           if (!member.clientId || member.clientId.includes("/")) throw new ManagementError(409, "La fiche cliente doit être reliée à cet accès.");
           const profile = (await tx.get(db.doc(`centers/${actor.centerId}/clients/${member.clientId}`))).data();
@@ -67,7 +72,7 @@ export function accessRepository(db: Firestore): AccessRepository {
     },
     async add(actor, member) {
       await db.runTransaction(async (tx) => {
-        await administrator(tx, actor);
+        await operator(tx, actor);
         tx.create(ref(actor, member.uid), { ...member, centerId: actor.centerId, role: "client", createdAt: Date.now(), createdBy: actor.uid });
       });
     },
@@ -76,6 +81,7 @@ export function accessRepository(db: Firestore): AccessRepository {
       await db.runTransaction(async (tx) => {
         const member = await client(tx, actor, uid);
         if (actor.uid === uid) throw new AccessError(403);
+        if (member.role === "manager" && actor.role !== "admin") throw new ManagementError(403, "Seul un administrateur peut modifier l’accès d’un manager.");
         if (!member.active) return;
         tx.update(ref(actor, uid), { active: false, deactivatedAt: Date.now(), deactivatedBy: actor.uid });
         tx.create(ref(actor, uid).collection("accessEvents").doc(), { action: "deactivated", at: Date.now(), actorUid: actor.uid });

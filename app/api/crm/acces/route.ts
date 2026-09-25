@@ -22,7 +22,7 @@ const json = (data: unknown, status = 200) => NextResponse.json(data, { status, 
 export async function POST(request: NextRequest) {
   if (!isTrustedMutation(request.headers.get("origin"), request.headers.get("content-type"), process.env.APP_ORIGIN)) return json({ error: "Requête non autorisée." }, 403);
   try {
-    const actor = await getAuthService().authorize(request.cookies.get(SESSION_COOKIE)?.value, ["admin"]);
+    const actor = await getAuthService().authorize(request.cookies.get(SESSION_COOKIE)?.value, ["admin", "manager"]);
     let raw;
     try { raw = await readLimitedBody(request); } catch { return json({ error: "Requête trop volumineuse." }, 413); }
     let parsed;
@@ -30,7 +30,10 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) return json({ error: "Requête invalide." }, 400);
     const service = getAccessManagement();
     const data = parsed.data;
-    if (data.action === "invite-manager") return json(await service.inviteManager(actor, data.email, data.name), 201);
+    if (data.action === "invite-manager") {
+      if (actor.role !== "admin") throw new ManagementError(403, "Seul un administrateur peut inviter un manager.");
+      return json(await service.inviteManager(actor, data.email, data.name), 201);
+    }
     if (data.action === "reactivate") {
       const user = await getFirebaseAdmin().auth.getUser(data.uid);
       if (user.disabled) throw new ManagementError(409, "Ce compte est désactivé dans Firebase. Vérifiez-le avant de réactiver son accès au centre.");

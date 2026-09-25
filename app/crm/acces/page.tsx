@@ -21,7 +21,7 @@ export default async function Page({
 }: {
   searchParams: Promise<{ after?: string }>;
 }) {
-  const result = await getPageAccess(["admin"]);
+  const result = await getPageAccess(["admin", "manager"]);
   if (!result.access) return <AccessErrorView message={result.error} />;
 
   const { after } = await searchParams;
@@ -80,7 +80,7 @@ export default async function Page({
         </span></p>
       </header>
 
-      <AccessManager members={members} />
+      <AccessManager members={members} role={result.access.role as "admin" | "manager"} />
 
       <nav className="flex flex-wrap items-center justify-between gap-4 border-t border-[#b7893b]/20 pt-5 text-xs" aria-label="Pages des accès">
         <p className="text-[#847969] dark:text-[#b4a898]">{members.length} accès sur cette page · {next ? "Suite disponible" : "Fin de la liste"}</p>
