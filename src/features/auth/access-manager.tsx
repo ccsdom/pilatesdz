@@ -67,7 +67,34 @@ export function AccessManager({ members, role = "admin" }: { members: ClientAcce
       </section>
       <aside className={styles.aside + " space-y-4"}>
         <section className={styles.invitation}><div className="border-b border-[#b7893b]/15 bg-[#b7893b]/5 p-5"><span className="mb-4 inline-flex rounded-xl bg-[#b7893b]/10 p-2.5 text-[#a77b37]"><UserPlus size={21} strokeWidth={1.5} /></span><h2 className="font-serif text-2xl">Inviter une personne</h2><p className={`mt-2 text-xs leading-5 ${muted}`}>{role === "admin" ? "Cliente : espace personnel. Manager : gestion opérationnelle complète." : "Inviter une cliente à accéder à son espace personnel."}</p></div>
-          <form onSubmit={invite} className="space-y-4 p-5">{role === "admin" ? <div className="space-y-2"><Label htmlFor="invite-role">Type d’accès</Label><select id="invite-role" name="role" disabled={busy} className="h-11 w-full rounded-xl border bg-background px-3"><option value="client">Cliente</option><option value="manager">Manager</option></select></div> : <input type="hidden" name="role" value="client" /><div className="space-y-2"><Label htmlFor="invite-name" className="text-xs">Nom de la personne</Label><Input id="invite-name" name="name" autoComplete="name" placeholder="Prénom et nom" required maxLength={100} disabled={busy} className="h-11 rounded-xl" /></div><div className="space-y-2"><Label htmlFor="invite-email" className="text-xs">Adresse e-mail</Label><Input id="invite-email" name="email" type="email" autoComplete="email" placeholder="prenom@exemple.com" required maxLength={254} disabled={busy} className="h-11 rounded-xl" /></div><Button type="submit" disabled={busy} className="h-auto min-h-11 w-full whitespace-normal rounded-xl text-xs">{busy ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}{busy ? "Opération en cours…" : cloud ? "Créer et envoyer l’e-mail d’accès" : "Créer l’invitation"}</Button><p className={`text-[11px] leading-5 ${muted}`}>{cloud ? "La personne invitée choisit son mot de passe depuis l’e-mail reçu." : "Mode local : un lien de test sera proposé, sans envoi d’e-mail."}</p></form>
+          <form onSubmit={invite} className="space-y-4 p-5">
+            {role === "admin" ? (
+              <div className="space-y-2">
+                <Label htmlFor="invite-role">Type d’accès</Label>
+                <select id="invite-role" name="role" disabled={busy} className="h-11 w-full rounded-xl border bg-background px-3">
+                  <option value="client">Cliente</option>
+                  <option value="manager">Manager</option>
+                </select>
+              </div>
+            ) : (
+              <input type="hidden" name="role" value="client" />
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="invite-name" className="text-xs">Nom de la personne</Label>
+              <Input id="invite-name" name="name" autoComplete="name" placeholder="Prénom et nom" required maxLength={100} disabled={busy} className="h-11 rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="invite-email" className="text-xs">Adresse e-mail</Label>
+              <Input id="invite-email" name="email" type="email" autoComplete="email" placeholder="prenom@exemple.com" required maxLength={254} disabled={busy} className="h-11 rounded-xl" />
+            </div>
+            <Button type="submit" disabled={busy} className="h-auto min-h-11 w-full whitespace-normal rounded-xl text-xs">
+              {busy ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
+              {busy ? "Opération en cours…" : cloud ? "Créer et envoyer l’e-mail d’accès" : "Créer l’invitation"}
+            </Button>
+            <p className={`text-[11px] leading-5 ${muted}`}>
+              {cloud ? "La personne invitée choisit son mot de passe depuis l’e-mail reçu." : "Mode local : un lien de test sera proposé, sans envoi d’e-mail."}
+            </p>
+          </form>
         </section>
         <div className="rounded-2xl border border-[#b7893b]/20 bg-[#b7893b]/5 p-5"><h3 className="flex items-center gap-2 text-xs font-semibold"><ShieldCheck size={16} className="text-[#a77b37]" />Des accès maîtrisés</h3><p className={`mt-3 text-xs leading-6 ${muted}`}>Désactiver un accès bloque la connexion au centre. La fiche cliente, les réservations et les forfaits sont conservés.</p><Link href="/crm/clientes" className="mt-3 inline-flex items-center gap-1 text-xs text-[#946b2f] hover:underline dark:text-[#dbb97e]">Consulter l’annuaire<ArrowUpRight size={13} /></Link></div>
       </aside>

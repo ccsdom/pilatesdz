@@ -2,7 +2,7 @@ import type { Access } from "@/domain/models/access";
 
 export type ClientAccess = { uid: string; email: string; name: string; active: boolean; clientId?: string; role?: "client" | "manager" };
 export class ManagementError extends Error {
-  constructor(public readonly status: 400 | 404 | 409, message: string) { super(message); }
+  constructor(public readonly status: 400 | 403 | 404 | 409, message: string) { super(message); }
 }
 export interface AccountProvisioner {
   create(email: string, name: string, uid?: string): Promise<string>;
