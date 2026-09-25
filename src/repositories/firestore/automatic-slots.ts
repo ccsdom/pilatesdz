@@ -1,3 +1,5 @@
+import { readOpeningPolicy } from "./opening-settings";
+import { openingForDay } from "@/domain/models/opening-policy";
 import "server-only";
 import type { Firestore } from "firebase-admin/firestore";
 import { AccessError, type Access } from "@/domain/models/access";
@@ -29,12 +31,13 @@ export async function ensureAutomaticSlots(db: Firestore, actor: Access, from: s
         const client = (await tx.get(root.collection("clients").doc(member.clientId))).data();
         if (!client || client.id !== member.clientId || client.centerId !== actor.centerId || client.authUid !== actor.uid || client.status !== "active") throw new AccessError(403);
       }
+      const policy = await readOpeningPolicy(db, actor.centerId, tx);
       const snapshot = await tx.get(publicDayQuery(db, actor.centerId, day));
       if (snapshot.size > 100) throw new Error("Planning needs review");
-      const existing = snapshot.docs.map(doc => readSlotOccupancy(doc.id, actor.centerId, doc.data()));
+      const existing = snapshot.docs.filter(doc => doc.data().openingClosed !== true).map(doc => readSlotOccupancy(doc.id, actor.centerId, doc.data()));
       for (const audience of ["femme", "homme"] as const) {
-        for (const slot of studioSlots(day, audience)) {
-          if (slot.startsAt <= now || existing.some(item => item.id === slot.id || (item.startsAt < slot.endsAt && item.startsAt + item.durationMinutes * 60000 > slot.startsAt))) continue;
+        for (const slot of studioSlots(day, audience, openingForDay(policy, day))) {
+          if (slot.startsAt <= now || snapshot.docs.some(doc => doc.id === slot.id) || existing.some(item => item.id === slot.id || (item.startsAt < slot.endsAt && item.startsAt + item.durationMinutes * 60000 > slot.startsAt))) continue;
           tx.create(root.collection("sessions").doc(slot.id), { id: slot.id, centerId: actor.centerId, title: `Créneau ${audience === "femme" ? "Femmes" : "Hommes"}`, instructor: "Équipe Studio", startsAt: slot.startsAt, durationMinutes: 60, capacity: 4, bookedCount: 0, status: "scheduled", createdAt: now, createdBy: "automatic_slots" });
         }
       }

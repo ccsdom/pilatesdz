@@ -54,7 +54,7 @@ export function PublicHeader() {
               Centre Commercial Zemzem, Bir Mourad Raïs · Alger
             </span>
             <span className="text-white/30">•</span>
-            <span className="text-[#e5be78]">Samedi au Jeudi : 10h00 - 20h00</span>
+            <Link href="/horaires" className="text-[#e5be78] hover:underline">Horaires et ouvertures du studio</Link>
           </div>
 
           <div className="flex items-center gap-5">

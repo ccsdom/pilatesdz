@@ -1,3 +1,4 @@
+import { OpeningHours } from "@/features/public-site/opening-hours";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, MapPin, Phone, Clock } from "lucide-react";
@@ -24,7 +25,7 @@ export default function ContactPage() {
         <div className={v.contactGrid}>
           <a href="tel:0553021714" className={v.info}><Phone size={20}/><span className={v.label}>Un échange direct</span><strong>05 53 02 17 14</strong><span className={v.detail}>Appelez le studio <ArrowUpRight size={16}/></span></a>
           <a href="#venir" className={v.info}><MapPin size={20}/><span className={v.label}>Nous retrouver</span><strong>Bir Mourad Raïs</strong><span className={v.detail}>Centre commercial Zemzem <ArrowRight size={16}/></span></a>
-          <Link href="/horaires" className={v.info}><Clock size={20}/><span className={v.label}>Votre rendez-vous</span><strong>10h00 — 20h00</strong><span className={v.detail}>Du samedi au jeudi <ArrowUpRight size={16}/></span></Link>
+          <Link href="/horaires" className={v.info}><Clock size={20}/><span className={v.label}>Votre rendez-vous</span><strong>Horaires du studio</strong><span className={v.detail}>Consulter les ouvertures <ArrowUpRight size={16}/></span></Link>
         </div>
       </section>
 
@@ -37,7 +38,7 @@ export default function ContactPage() {
         <ContactForm />
       </section>
 
-      <section id="venir" className={v.visit}><div className={`${s.wrap} ${v.visitGrid}`}><div><p className={s.eyebrow}>Le plaisir de se retrouver</p><h2>Votre prochaine pause.<br /><em>Au cœur d’Alger.</em></h2><p className={v.body}>Retrouvez-nous au Centre commercial Zemzem, à Bir Mourad Raïs. Pour préparer votre première visite ou préciser l’accès, appelez le studio.</p><a href="https://www.google.com/maps/search/?api=1&query=Centre+commercial+Zemzem+Bir+Mourad+Rais+Alger" target="_blank" rel="noopener noreferrer" className={v.mapLink}>Rechercher l’adresse sur Google Maps <ArrowUpRight size={18}/><span className={v.newTab}>Nouvel onglet</span></a></div><div className={v.addressCard}><div className={v.addressTop}><span>PILATES CENTER · ALGER</span><MapPin size={25}/></div><address><strong>Centre commercial<br />Zemzem</strong><span>Bir Mourad Raïs, Alger, Algérie</span></address><div className={v.hours}><div><span>Samedi — Jeudi</span><strong>10h00 — 20h00</strong></div><p>Fermé le vendredi</p><p>Plages dédiées femmes et hommes</p><Link href="/horaires" className={s.textLink}>Consulter les horaires détaillés <ArrowRight size={16}/></Link></div><a href="tel:0553021714" className={v.phone}><Phone size={17}/>05 53 02 17 14 <ArrowUpRight size={18}/></a></div></div></section>
+      <section id="venir" className={v.visit}><div className={`${s.wrap} ${v.visitGrid}`}><div><p className={s.eyebrow}>Le plaisir de se retrouver</p><h2>Votre prochaine pause.<br /><em>Au cœur d’Alger.</em></h2><p className={v.body}>Retrouvez-nous au Centre commercial Zemzem, à Bir Mourad Raïs. Pour préparer votre première visite ou préciser l’accès, appelez le studio.</p><a href="https://www.google.com/maps/search/?api=1&query=Centre+commercial+Zemzem+Bir+Mourad+Rais+Alger" target="_blank" rel="noopener noreferrer" className={v.mapLink}>Rechercher l’adresse sur Google Maps <ArrowUpRight size={18}/><span className={v.newTab}>Nouvel onglet</span></a></div><div className={v.addressCard}><div className={v.addressTop}><span>PILATES CENTER · ALGER</span><MapPin size={25}/></div><address><strong>Centre commercial<br />Zemzem</strong><span>Bir Mourad Raïs, Alger, Algérie</span></address><div className={v.hours}><OpeningHours /><Link href="/horaires" className={s.textLink}>Consulter les horaires détaillés <ArrowRight size={16}/></Link></div><a href="tel:0553021714" className={v.phone}><Phone size={17}/>05 53 02 17 14 <ArrowUpRight size={18}/></a></div></div></section>
 
       <section className={`${s.wrap} ${v.member}`}><div><p className={s.eyebrow}>Déjà cliente du studio ?</p><h2>Votre espace.<br /><em>Tout simplement.</em></h2></div><div><p className={v.body}>Réservez ou annulez vos séances, retrouvez votre abonnement et suivez votre solde depuis votre espace personnel.</p><Link href="/connexion" className={s.button}>Accéder à mon espace <ArrowUpRight size={18}/></Link></div></section>
     </main>

@@ -95,7 +95,8 @@ it("limits five simultaneous first visits to four places, atomically and idempot
   expect((await (await availability()).json()).slots[0].available).toBe(0);
 });
 it("rejects forged hours, invalid dates, unauthenticated credits and foreign origins", async () => {
-  expect((await post({ ...bodies[0], slot: "03:00 - 04:00" })).status).toBe(400);
+  // Closed hours are a conflict with the current manager configuration.
+  expect((await post({ ...bodies[0], slot: "03:00 - 04:00" })).status).toBe(409);
   expect((await post({ ...bodies[0], date: "2098-02-30" })).status).toBe(400);
   expect((await post({ ...bodies[0], paymentMethod: "credit" })).status).toBe(400);
   expect((await post(bodies[0], "https://evil.test")).status).toBe(403);

@@ -1,3 +1,4 @@
+import { readOpeningPolicy, assertOpeningForBooking } from "./opening-settings";
 import { isCenterOperator } from "@/domain/models/access";
 import "server-only";
 import { attendanceOpen, readAttendance, type Attendance } from "@/domain/models/attendance";
@@ -33,7 +34,7 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
     if (!data) throw new ManagementError(404, "Séance introuvable dans ce centre.");
     const parsed = storedSessionSchema.safeParse({ title: data.title, instructor: data.instructor, startsAt: data.startsAt, durationMinutes: data.durationMinutes, capacity: data.capacity });
     if (!parsed.success || data.id !== id || data.centerId !== actor.centerId || !["scheduled", "cancelled"].includes(data.status) || !Number.isInteger(data.bookedCount) || data.bookedCount < 0 || data.bookedCount > data.capacity) throw new Error("Invalid session record");
-    return { ...parsed.data, id, centerId: actor.centerId, status: data.status, bookedCount: data.bookedCount };
+    return { ...parsed.data, title: data.openingClosed === true ? `${parsed.data.title} · Fermé (horaires)` : parsed.data.title, id, centerId: actor.centerId, status: data.openingClosed === true ? "cancelled" : data.status, bookedCount: data.bookedCount };
   }
   function bookingStatus(session: PilatesSession, clientId: string, data?: DocumentData): BookingStatus {
     if (!data) return "none";
@@ -143,6 +144,7 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
     async create(actor, id, input) {
       return db.runTransaction(async (tx) => {
         await identity(tx, actor, true);
+        await readOpeningPolicy(db, actor.centerId, tx);
         const ref = sessionRef(actor, id);
         const existing = await tx.get(ref);
         if (existing.exists) {
@@ -153,6 +155,7 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
         if (input.startsAt <= now() || input.startsAt > now() + 366 * 86400000) throw new ManagementError(400, "La séance doit commencer dans le futur, au cours des douze prochains mois.");
         const overlapping = await tx.get(db.collection(`${root(actor)}/sessions`).where("startsAt", ">=", input.startsAt - 180 * 60000).where("startsAt", "<", input.startsAt + input.durationMinutes * 60000).limit(101));
         if (overlapping.size > 100 || overlapping.docs.some(doc => {
+          if (doc.data().openingClosed === true) return false;
           const existing = decode(actor, doc.id, doc.data());
           return existing.startsAt + existing.durationMinutes * 60000 > input.startsAt;
         })) throw new ManagementError(409, "Un créneau existe déjà sur cet horaire. Ouvrez-le depuis le planning pour gérer ses places.");
@@ -210,7 +213,9 @@ export function planningRepository(db: Firestore, now = Date.now): PlanningRepos
         } else if (targetClientId !== undefined) throw new AccessError(403);
         if (!person.clientId || !person.active) throw new AccessError(403);
         const ref = sessionRef(actor, id);
-        const session = decode(actor, id, (await tx.get(ref)).data());
+        const record = (await tx.get(ref)).data();
+        const session = decode(actor, id, record);
+        await assertOpeningForBooking(db, tx, actor.centerId, id, record!);
         future(session);
         if (session.status !== "scheduled") throw new ManagementError(409, "Cette séance est annulée.");
         const booking = bookingRef(actor, id, person.clientId);

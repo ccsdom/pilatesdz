@@ -89,6 +89,7 @@ export function CrmHeader({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
+              <DropdownMenuItem asChild><Link href="/crm/horaires" className="flex items-center gap-2.5 px-2.5 py-2 text-sm"><Clock className="h-4 w-4 text-[#b7893b]" />Horaires du centre</Link></DropdownMenuItem>
               <DropdownMenuItem asChild><Link href="/crm/reservations" className="flex items-center gap-2.5 px-2.5 py-2 text-sm"><Receipt className="h-4 w-4 text-[#b7893b]" />Réservations</Link></DropdownMenuItem>
               {role === "admin" && <DropdownMenuItem asChild>
                 <Link

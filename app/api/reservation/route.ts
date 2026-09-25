@@ -1,3 +1,6 @@
+import { readOpeningPolicy } from "@/repositories/firestore/opening-settings";
+import { openingForDay } from "@/domain/models/opening-policy";
+import { bookingCalendarDate } from "@/domain/models/public-booking-calendar";
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { z } from "zod";
@@ -29,9 +32,8 @@ export async function POST(request: NextRequest) {
   let data;
   try { data = input.parse(JSON.parse(raw)); } catch { return json({ error: "Vérifiez vos coordonnées et le créneau. Pour utiliser un forfait, connectez-vous à votre espace." }, 400); }
   const now = Date.now();
-  let slot;
-  try { slot = studioSlots(data.date, data.gender).find(item => item.time === data.slot); } catch { /* invalid calendar date */ }
-  if (!slot || data.date < firstBookingDay(now) || !data.clientPhone) return json({ error: "Choisissez un créneau ouvert à partir de demain et renseignez votre téléphone." }, 400);
+  try { bookingCalendarDate(data.date); } catch { return json({ error: "Date invalide." }, 400); }
+  if (data.date < firstBookingDay(now) || !data.clientPhone) return json({ error: "Choisissez une date à partir de demain et renseignez votre téléphone." }, 400);
   const centerId = process.env.CENTER_ID || process.env.STUDIO_CENTER_ID || "alger";
   if (!/^[a-z0-9-]+$/.test(centerId)) return json({ error: "Configuration indisponible." }, 503);
   const phone = data.clientPhone.replace(/\D/g, "");
@@ -45,14 +47,16 @@ export async function POST(request: NextRequest) {
     const identity = root.collection("public_contact_claims").doc(digest(normalizedPhone));
     const emailClaim = data.clientEmail ? root.collection("public_contact_claims").doc(digest(data.clientEmail)) : null;
     const clientRef = root.collection("clients").doc();
-    const sessionRef = root.collection("sessions").doc(slot.id);
-    const selected = slot;
     const result = await db.runTransaction(async tx => {
       const previous = (await tx.get(receipt)).data();
       if (previous) {
         if (previous.fingerprint !== fingerprint) throw new ManagementError(409, "Cette demande a déjà été utilisée. Actualisez la page.");
         return { bookingReference: previous.reference as string, reservationId: receipt.id, clientId: previous.clientId as string };
       }
+      const policy = await readOpeningPolicy(db, centerId, tx);
+      const selected = studioSlots(data.date, data.gender, openingForDay(policy, data.date)).find(slot => slot.time === data.slot);
+      if (!selected) throw new ManagementError(409, "Ce créneau est fermé. Choisissez un autre horaire.");
+      const sessionRef = root.collection("sessions").doc(selected.id);
       const claim = await tx.get(identity);
       const emailIdentity = emailClaim ? await tx.get(emailClaim) : null;
       const clients = root.collection("clients");
@@ -64,7 +68,7 @@ export async function POST(request: NextRequest) {
       if (claim.exists || emailIdentity?.exists || !samePhone.empty || !indexedPhone.empty || !internationalPhone.empty || (sameEmail && !sameEmail.empty)) throw new ManagementError(409, "Pour poursuivre, connectez-vous à votre espace ou contactez le studio afin de vérifier votre accès.");
       const snapshot = await tx.get(publicDayQuery(db, centerId, data.date));
       if (snapshot.size > 100) throw new ManagementError(409, "Le studio doit vérifier ce planning.");
-      const occupancy = snapshot.docs.map(doc => readSlotOccupancy(doc.id, centerId, doc.data()));
+      const occupancy = snapshot.docs.filter(doc => doc.data().openingClosed !== true).map(doc => readSlotOccupancy(doc.id, centerId, doc.data()));
       const available = slotAvailability(selected, occupancy, Date.now());
       if (available.available < 1) throw new ManagementError(409, "Ce créneau n’est plus disponible. Choisissez un autre horaire.");
       const profile = { name: data.clientName, email: data.clientEmail ?? `${normalizedPhone}@temp.pilates.dz`, phone: normalizedPhone, status: "active" as const };

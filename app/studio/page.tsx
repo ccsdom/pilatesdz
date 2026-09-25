@@ -1,3 +1,4 @@
+import { OpeningHours } from "@/features/public-site/opening-hours";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, ArrowRight, MapPin, Phone } from "lucide-react";
@@ -38,7 +39,7 @@ export default function LeStudioPage() {
           <div className={v.experienceCopy}><Lotus className="h-12 w-16"/><p className={s.eyebrow}>02 — La pratique, à taille humaine</p><h2>Un petit groupe.<br /><em>Une vraie place pour vous.</em></h2><p>Des créneaux de {COURSE_DURATION_MINUTES} minutes, limités à {COURSE_MAX_CAPACITY} personnes. Vous choisissez votre heure selon les places disponibles et les plages dédiées du studio.</p><Link href="/les-cours" className={s.textLink}>Découvrir nos pratiques <ArrowUpRight size={18}/></Link></div>
           <figure className={v.groupPhoto}><Image src="/brand/cours-pilates-alger.webp" alt="Trois personnes pratiquent le Pilates avec les sangles du Reformer" fill sizes="(min-width: 900px) 50vw, 100vw" /></figure>
         </div>
-        <div className={v.numbers}>{[[String(COURSE_MAX_CAPACITY), "places maximum", "Un cadre intime pour chaque séance."], [String(COURSE_DURATION_MINUTES), "minutes par créneau", "Un rendez-vous qui trouve sa place dans votre journée."], ["6", "jours par semaine", "Du samedi au jeudi, de 10h à 20h."]].map(([n,title,copy])=><article key={title}><strong>{n}</strong><h3>{title}</h3><p>{copy}</p></article>)}</div>
+        <div className={v.numbers}>{[[String(COURSE_MAX_CAPACITY), "places maximum", "Un cadre intime pour chaque séance."], [String(COURSE_DURATION_MINUTES), "minutes par créneau", "Un rendez-vous qui trouve sa place dans votre journée."], ["Vous", "au centre de notre attention", "Des plages dédiées, sur réservation."]].map(([n,title,copy])=><article key={title}><strong>{n}</strong><h3>{title}</h3><p>{copy}</p></article>)}</div>
       </div></section>
 
       <section className={`${s.wrap} ${v.method}`}>
@@ -48,7 +49,7 @@ export default function LeStudioPage() {
 
       <section id="venir" className={v.visit}><div className={`${s.wrap} ${v.visitGrid}`}>
         <div><p className={s.eyebrow}>04 — Votre première visite</p><h2>On se retrouve<br /><em>au studio.</em></h2><p className={s.body}>Une question avant de commencer ? Appelez-nous pour préparer votre venue, ou choisissez directement un créneau disponible.</p><div className={s.actions}><Link href="/reservation" className={s.button}>Réserver ma séance <ArrowUpRight size={18}/></Link><Link href="/tarifs" className={s.textLink}>Voir les formules <ArrowRight size={16}/></Link></div><p className={v.discovery}>Séance découverte · {formatDzd(SINGLE_SESSION_OFFERS[0].priceDzd)}</p></div>
-        <div className={v.address}><div><MapPin size={20}/><div><h3>Bir Mourad Raïs, Alger</h3><p>Centre commercial Zemzem</p><Link href="/contact" className={s.textLink}>Coordonnées et accès <ArrowUpRight size={16}/></Link></div></div><div><span className={v.small}>HORAIRES</span><p>Samedi — Jeudi<strong>10h00 — 20h00</strong></p><span className={v.note}>Fermé le vendredi · Plages femmes et hommes</span><Link href="/horaires" className={s.textLink}>Consulter les horaires <ArrowRight size={16}/></Link></div><a href="tel:0553021714" className={v.phone}><Phone size={18}/>05 53 02 17 14<ArrowUpRight size={18}/></a></div>
+        <div className={v.address}><div><MapPin size={20}/><div><h3>Bir Mourad Raïs, Alger</h3><p>Centre commercial Zemzem</p><Link href="/contact" className={s.textLink}>Coordonnées et accès <ArrowUpRight size={16}/></Link></div></div><div><span className={v.small}>HORAIRES</span><OpeningHours /><Link href="/horaires" className={s.textLink}>Consulter les horaires <ArrowRight size={16}/></Link></div><a href="tel:0553021714" className={v.phone}><Phone size={18}/>05 53 02 17 14<ArrowUpRight size={18}/></a></div>
       </div></section>
     </main>
     <footer className={s.footer}><div className={s.wrap}><div className={s.footerTop}><Link href="/" aria-label="Pilates Center — Accueil"><BrandLockup light/></Link><p>Force. Équilibre. Harmonie.</p><Link href="/reservation">Votre prochaine séance <ArrowUpRight size={16}/></Link></div><div className={s.footerBottom}><span>© {new Date().getFullYear()} Pilates Center Alger</span><nav aria-label="Informations légales"><Link href="/mentions-legales">Mentions légales</Link><Link href="/politique-de-confidentialite">Confidentialité</Link><Link href="/cgv">CGV</Link></nav></div></div></footer>

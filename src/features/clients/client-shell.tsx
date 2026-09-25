@@ -6,7 +6,7 @@ import { UsersRound, LayoutDashboard, KeyRound, CalendarDays, BookmarkCheck, Wal
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { CrmHeader } from "@/features/crm/crm-header";
 
-export function ClientShell({ centerId, children, active = "clients" }: { centerId: string; children: React.ReactNode; active?: "dashboard" | "clients" | "planning" | "reservations" | "packages" | "cash" | "access" }) {
+export function ClientShell({ centerId, children, active = "clients" }: { centerId: string; children: React.ReactNode; active?: "dashboard" | "clients" | "planning" | "reservations" | "packages" | "cash" | "access" | "opening" }) {
   const role = useCrmRole();
   const itemClass = (selected: boolean) => `flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium transition-all ${selected ? "bg-[#b7893b] text-black font-semibold shadow-sm" : "text-white/70 hover:bg-white/10 hover:text-white"}`;
 
@@ -32,6 +32,7 @@ export function ClientShell({ centerId, children, active = "clients" }: { center
           <Link href="/crm/forfaits" aria-current={active === "packages" ? "page" : undefined} className={itemClass(active === "packages")}><WalletCards size={18} />Forfaits</Link>
           <Link href="/crm/encaissements" aria-current={active === "cash" ? "page" : undefined} className={itemClass(active === "cash")}><CreditCard size={18} />Encaissements</Link>
           <Link href="/crm/clientes" aria-current={active === "clients" ? "page" : undefined} className={itemClass(active === "clients")}><UsersRound size={18} />Clientes</Link>
+          <Link href="/crm/horaires" aria-current={active === "opening" ? "page" : undefined} className={itemClass(active === "opening")}><CalendarDays size={18} />Horaires du centre</Link>
           {role === "admin" && <Link href="/crm/acces" aria-current={active === "access" ? "page" : undefined} className={itemClass(active === "access")}><KeyRound size={18} />Gestion des accès</Link>}
         </nav>
       </aside>

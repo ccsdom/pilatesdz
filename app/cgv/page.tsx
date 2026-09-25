@@ -96,7 +96,7 @@ export default function CgvPage() {
               <h2 className="font-serif text-2xl font-normal text-[#1c1917]">Article 5 – Horaires & Respect du Règlement</h2>
             </div>
             <p className="mt-4 text-sm">
-              Les clientes et membres s&apos;engagent à respecter les créneaux d&apos;ouverture ainsi que la répartition horaire dédiée aux Femmes et aux Hommes (du Samedi au Jeudi de 10h00 à 20h00). Une tenue de sport adaptée est exigée pour l&apos;accès aux appareils et aux tapis.
+              Les clientes et membres s&apos;engagent à respecter les créneaux d&apos;ouverture ainsi que la répartition horaire dédiée aux Femmes et aux Hommes (consultez les horaires et les exceptions dans le calendrier de réservation). Une tenue de sport adaptée est exigée pour l&apos;accès aux appareils et aux tapis.
             </p>
           </section>
 

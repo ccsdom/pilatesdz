@@ -1,3 +1,5 @@
+import { readOpeningPolicy } from "./opening-settings";
+import { openingForDay } from "@/domain/models/opening-policy";
 import "server-only";
 import type { Firestore, DocumentData } from "firebase-admin/firestore";
 import { dayRange } from "@/domain/models/planning";
@@ -15,8 +17,11 @@ export function publicDayQuery(db: Firestore, centerId: string, day: string) {
 }
 
 export async function publicAvailability(db: Firestore, centerId: string, day: string, audience: SlotAudience, now = Date.now()) {
-  const snapshot = await publicDayQuery(db, centerId, day).get();
+  return db.runTransaction(async tx => {
+  const policy = await readOpeningPolicy(db, centerId, tx);
+  const snapshot = await tx.get(publicDayQuery(db, centerId, day));
   if (snapshot.size > 100) throw new Error("Planning needs review");
-  const sessions = snapshot.docs.map(doc => readSlotOccupancy(doc.id, centerId, doc.data()));
-  return studioSlots(day, audience).map(slot => slotAvailability(slot, sessions, now));
+  const sessions = snapshot.docs.filter(doc => doc.data().openingClosed !== true).map(doc => readSlotOccupancy(doc.id, centerId, doc.data()));
+  return studioSlots(day, audience, openingForDay(policy, day)).map(slot => slotAvailability(slot, sessions, now));
+  });
 }

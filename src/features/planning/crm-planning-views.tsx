@@ -25,6 +25,8 @@ import { Button } from "@/components/ui/button";
 import { SessionPreviewModal } from "./session-preview-modal";
 import styles from "./planning-premium.module.css";
 import { isSessionAvailable, sessionsInMonth } from "@/domain/models/planning-display";
+import { useOpeningPolicy } from "@/features/public-site/opening-hours";
+import { openingForDay } from "@/domain/models/opening-policy";
 import { studioSlots } from "@/domain/models/studio-slots";
 import { usePlanningTime } from "./use-planning-time";
 
@@ -551,7 +553,8 @@ function DayView({
       .sort((a, b) => a.startsAt - b.startsAt);
   }, [sessions, selectedDay]);
 
-  const hours = Array.from({ length: 14 }, (_, i) => i + 8); // 8:00 to 21:00
+  const { policy } = useOpeningPolicy();
+  const hours = Array.from({ length: 24 }, (_, i) => i);
 
   return (
     <div className="space-y-6">
@@ -585,7 +588,7 @@ function DayView({
                   <div className="space-y-2">
                     {hourSessions.length === 0 ? (
                       <div className="h-full rounded-xl border border-dashed border-transparent hover:border-[#e0d6c5] transition-colors p-2 text-xs text-[#a09484]">
-                        {[...studioSlots(selectedDay, "femme"), ...studioSlots(selectedDay, "homme")].some(slot => studioDateTime(slot.startsAt).slice(11, 13) === String(hour).padStart(2, "0")) ? "Aucune séance affichée" : "Fermé"}
+                        {(policy ? [...studioSlots(selectedDay, "femme", openingForDay(policy, selectedDay)), ...studioSlots(selectedDay, "homme", openingForDay(policy, selectedDay))] : []).some(slot => studioDateTime(slot.startsAt).slice(11, 13) === String(hour).padStart(2, "0")) ? "Aucune séance affichée" : policy ? "Fermé" : "Horaires indisponibles"}
                       </div>
                     ) : (
                       hourSessions.map((s) => {

@@ -1,5 +1,6 @@
+import { OpeningHours } from "@/features/public-site/opening-hours";
 import Link from "next/link";
-import { ArrowRight, Clock, Calendar, Phone, Menu } from "lucide-react";
+import { ArrowRight, Clock, Phone, Menu } from "lucide-react";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 
 export const metadata = {
@@ -72,7 +73,7 @@ export default function HorairesPage() {
             </h1>
             
             <p className="mt-8 text-lg leading-relaxed text-[#61574b] lg:text-xl">
-              Le studio est ouvert du Samedi au Jeudi de 10h00 à 20h00, avec une répartition horaire spécifiquement aménagée pour les séances Femmes et Hommes.
+              Consultez les plages Femmes et Hommes, les ouvertures exceptionnelles et les fermetures prévues par le centre.
             </p>
           </div>
         </section>
@@ -81,97 +82,7 @@ export default function HorairesPage() {
         <section className="py-20 bg-white border-y border-[#e5dacf]">
           <div className="mx-auto max-w-7xl px-6 lg:px-10">
             
-            <div className="grid gap-8 md:grid-cols-3">
-              
-              {/* Carte 1 : Samedi, Lundi, Mercredi */}
-              <div className="rounded-3xl border border-[#dccbb0] bg-gradient-to-b from-[#ffffff] to-[#faf6f0] p-8 shadow-md transition-all hover:border-[#b7893b] hover:shadow-xl">
-                <div className="flex items-center justify-between">
-                  <span className="rounded-full bg-[#b7893b]/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#99702d]">
-                    Jours A
-                  </span>
-                  <Calendar className="h-5 w-5 text-[#8b652b]" />
-                </div>
-                <h2 className="mt-4 font-serif text-2xl font-normal text-[#1c1917]">
-                  Samedi, Lundi & Mercredi
-                </h2>
-                
-                <div className="mt-6 space-y-4 pt-4 border-t border-[#f0e8dd]">
-                  <div className="rounded-2xl bg-white p-5 border border-[#e5dacf] shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#8b652b]">🌸 Créneau Femmes</span>
-                      <span className="text-sm font-semibold text-[#1c1917]">10h00 – 14h00</span>
-                    </div>
-                    <p className="mt-2 text-xs text-[#706659]">4 heures de séances réservées exclusivement aux dames.</p>
-                  </div>
-
-                  <div className="rounded-2xl bg-[#f5ede3] p-5 border border-[#ddd6cc]">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#38322a]">🌿 Créneau Hommes</span>
-                      <span className="text-sm font-semibold text-[#1c1917]">14h00 – 20h00</span>
-                    </div>
-                    <p className="mt-2 text-xs text-[#706659]">6 heures réservées aux séances pour hommes.</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Carte 2 : Dimanche, Mardi, Jeudi */}
-              <div className="rounded-3xl border border-[#dccbb0] bg-gradient-to-b from-[#ffffff] to-[#faf6f0] p-8 shadow-md transition-all hover:border-[#b7893b] hover:shadow-xl">
-                <div className="flex items-center justify-between">
-                  <span className="rounded-full bg-[#b7893b]/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#99702d]">
-                    Jours B
-                  </span>
-                  <Calendar className="h-5 w-5 text-[#8b652b]" />
-                </div>
-                <h2 className="mt-4 font-serif text-2xl font-normal text-[#1c1917]">
-                  Dimanche, Mardi & Jeudi
-                </h2>
-
-                <div className="mt-6 space-y-4 pt-4 border-t border-[#f0e8dd]">
-                  <div className="rounded-2xl bg-white p-5 border border-[#e5dacf] shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#8b652b]">🌸 Créneau Femmes</span>
-                      <span className="text-sm font-semibold text-[#1c1917]">10h00 – 18h00</span>
-                    </div>
-                    <p className="mt-2 text-xs text-[#706659]">8 heures complètes dédiées aux séances féminines.</p>
-                  </div>
-
-                  <div className="rounded-2xl bg-[#f5ede3] p-5 border border-[#ddd6cc]">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#38322a]">🌿 Créneau Hommes</span>
-                      <span className="text-sm font-semibold text-[#1c1917]">18h00 – 20h00</span>
-                    </div>
-                    <p className="mt-2 text-xs text-[#706659]">Session du soir réservée aux hommes.</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Carte 3 : Vendredi (Repos) */}
-              <div className="rounded-3xl border border-[#e2d5c3] bg-gradient-to-b from-[#faf7f2] to-[#f3e9da] p-8 shadow-sm flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="rounded-full bg-[#1c1917]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#676056]">
-                      Repos hebdomadaire
-                    </span>
-                    <Clock className="h-5 w-5 text-[#786c5e]" />
-                  </div>
-                  <h2 className="mt-4 font-serif text-2xl font-normal text-[#1c1917]">
-                    Vendredi
-                  </h2>
-                  <div className="mt-6 rounded-2xl bg-white/80 p-6 border border-[#cdae72]/30 text-center shadow-sm">
-                    <span className="font-serif text-3xl font-light text-[#9a702c]">Fermé</span>
-                    <p className="mt-2 text-xs text-[#706659]">Fermeture hebdomadaire pour entretien et repos de l&apos;équipe.</p>
-                  </div>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-[#cdae72]/30 text-center">
-                  <a href="tel:0553021714" className="text-xs font-semibold text-[#8b652b] hover:underline">
-                    Renseignements téléphoniques : 05 53 02 17 14
-                  </a>
-                </div>
-              </div>
-
-            </div>
-
+            <div className="mx-auto max-w-2xl rounded-3xl border border-[#dccbb0] p-8"><OpeningHours /></div>
             {/* CALLOUT RÉSERVATION */}
             <div className="mt-16 rounded-3xl border border-[#cdae72]/40 bg-[#faf7f2] p-8 text-center shadow-lg">
               <h3 className="font-serif text-2xl font-light text-[#1c1917]">Comment réserver votre créneau ?</h3>

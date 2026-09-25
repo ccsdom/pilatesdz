@@ -1,25 +1,22 @@
-import { bookingCalendarDate } from "./public-booking-calendar";
 import { parseStudioDateTime } from "./planning";
 import { COURSE_DURATION_MINUTES, COURSE_MAX_CAPACITY } from "./studio-offers";
+import { defaultStudioOpening, openingRanges, type StudioOpening } from "./studio-opening";
 
 export type SlotAudience = "femme" | "homme";
 export type StudioSlot = { id: string; time: string; startsAt: number; endsAt: number; totalCapacity: number; reserved: number; available: number; status: "available" | "limited" | "full" };
 export type SlotOccupancy = { id: string; startsAt: number; durationMinutes: number; capacity: number; bookedCount: number; status: "scheduled" | "cancelled" };
 
 /** Preserve the historical public identifiers; an activity never adds capacity. */
-export function studioSlots(day: string, audience: SlotAudience): StudioSlot[] {
-  const weekday = bookingCalendarDate(day).getUTCDay();
-  if (weekday === 5) return [];
-  const change = [6, 1, 3].includes(weekday) ? 14 : 18;
-  const from = audience === "femme" ? 10 : change;
-  const to = audience === "femme" ? change : 20;
-  return Array.from({ length: to - from }, (_, index) => {
-    const hour = from + index;
-    const start = `${String(hour).padStart(2, "0")}:00`;
-    const end = `${String(hour + 1).padStart(2, "0")}:00`;
+export function studioSlots(day: string, audience: SlotAudience, opening: StudioOpening = defaultStudioOpening()): StudioSlot[] {
+  const time = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+  return openingRanges(day, opening).filter(range => range.audience === audience).flatMap(range =>
+    Array.from({ length: (range.endMinute - range.startMinute) / COURSE_DURATION_MINUTES }, (_, index) => {
+    const minute = range.startMinute + index * COURSE_DURATION_MINUTES;
+    const start = time(minute);
+    const end = time(minute + COURSE_DURATION_MINUTES);
     const startsAt = parseStudioDateTime(`${day}T${start}`);
     return { id: `pub_${day}_${start.replace(":", "")}_${audience}`, time: `${start} - ${end}`, startsAt, endsAt: startsAt + COURSE_DURATION_MINUTES * 60000, totalCapacity: COURSE_MAX_CAPACITY, reserved: 0, available: COURSE_MAX_CAPACITY, status: "available" };
-  });
+  }));
 }
 
 export function slotAvailability(slot: StudioSlot, sessions: SlotOccupancy[], now: number): StudioSlot {

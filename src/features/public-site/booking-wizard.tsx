@@ -5,7 +5,7 @@ import Link from "next/link";
 import { SINGLE_SESSION_OFFERS, formatDzd } from "@/domain/models/studio-offers";
 import v from "./booking-wizard.module.css";
 import { BookingDatePicker } from "./booking-date-picker";
-import { bookingCalendarDate, firstBookingDay, initialBookingDay } from "@/domain/models/public-booking-calendar";
+import { bookingCalendarDate, firstBookingDay } from "@/domain/models/public-booking-calendar";
 import { 
   Calendar as CalendarIcon, 
   Clock, 
@@ -84,7 +84,7 @@ export function BookingWizard() {
   const [gender, setGender] = useState<GenderOption>("femme");
   
   const [minimumDay] = useState(() => firstBookingDay(Date.now()));
-  const [selectedDate, setSelectedDate] = useState<Date>(() => bookingCalendarDate(initialBookingDay(minimumDay)));
+  const [selectedDate, setSelectedDate] = useState<Date>(() => bookingCalendarDate(minimumDay));
   const [selectedSlot, setSelectedSlot] = useState<string>("");
 
   // Client Details Form State
@@ -121,7 +121,7 @@ export function BookingWizard() {
     return () => { controller.abort(); window.clearInterval(timer); };
   }, [day, gender, availabilityKey, step]);
   const currentAvailability = availability?.key === availabilityKey ? availability : null;
-  const daySchedule = { isOpen: selectedDate.getUTCDay() !== 5, slots: currentAvailability?.slots ?? [], reason: "Le studio est fermé le vendredi." };
+  const daySchedule = { isOpen: true, slots: currentAvailability?.slots ?? [], reason: "Consultez les horaires et les exceptions dans le calendrier." };
   // Handle Date Selection
   const handleSelectDate = (date: Date) => {
     setSelectedDate(date);
@@ -337,16 +337,7 @@ export function BookingWizard() {
               <p className="mt-2 text-xs leading-relaxed text-[#61574b]">
                 Accès aux plages horaires réservées aux femmes :
               </p>
-              <ul className="mt-4 space-y-2 text-xs font-medium text-[#38322a]">
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#b7893b]" />
-                  <span>Sam, Lun, Mer : <strong>10h00 – 14h00</strong></span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#b7893b]" />
-                  <span>Dim, Mar, Jeu : <strong>10h00 – 18h00</strong></span>
-                </li>
-              </ul>
+              <p className="mt-4 text-xs">Choisissez une date pour consulter les heures disponibles.</p>
             </div>
 
             <div
@@ -371,16 +362,7 @@ export function BookingWizard() {
               <p className="mt-2 text-xs leading-relaxed text-[#61574b]">
                 Accès aux plages horaires réservées aux hommes :
               </p>
-              <ul className="mt-4 space-y-2 text-xs font-medium text-[#38322a]">
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#1c1917]" />
-                  <span>Sam, Lun, Mer : <strong>14h00 – 20h00</strong></span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#1c1917]" />
-                  <span>Dim, Mar, Jeu : <strong>18h00 – 20h00</strong></span>
-                </li>
-              </ul>
+              <p className="mt-4 text-xs">Choisissez une date pour consulter les heures disponibles.</p>
             </div>
           </div>
 
@@ -388,7 +370,7 @@ export function BookingWizard() {
           <div className="rounded-sm border border-[#dccbb0] bg-[#faf7f2] p-5 flex items-start gap-4 text-xs text-[#524b42]">
             <Info className="h-5 w-5 text-[#99702d] shrink-0 mt-0.5" />
             <div>
-              <span className="font-bold text-[#1c1917]">4 places par heure :</span> Les disponibilités sont partagées avec le planning du studio. Le studio est fermé le vendredi.
+              <span className="font-bold text-[#1c1917]">4 places par heure :</span> Les disponibilités sont partagées avec le planning du studio. Les fermetures sont indiquées dans le calendrier.
             </div>
           </div>
 
