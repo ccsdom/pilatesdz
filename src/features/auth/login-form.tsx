@@ -5,14 +5,16 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { inMemoryPersistence, setPersistence, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { getFirebaseClient } from "@/lib/firebase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
+import s from "./login-form.module.css";
+
+
 
 export function LoginForm() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
@@ -49,12 +51,10 @@ export function LoginForm() {
       setBusy(false);
     }
   }
-  return <form onSubmit={submit} className="w-full space-y-5">
-    <div className="space-y-2"><Label htmlFor="email">Adresse e-mail</Label><Input id="email" name="email" type="email" autoComplete="username" required maxLength={254} disabled={busy} /></div>
-    <div className="space-y-2"><Label htmlFor="password">Mot de passe</Label><Input id="password" name="password" type="password" autoComplete="current-password" required maxLength={128} disabled={busy} /></div>
-    {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-    <Button type="submit" className="w-full" disabled={busy}>{busy ? "Connexion en cours…" : "Se connecter"}</Button>
-    <Link href="/connexion/mot-de-passe" className="block text-sm underline">Mot de passe oublié ?</Link>
-    <p className="text-sm leading-6 text-muted-foreground">Votre accès est créé par le centre. Pour obtenir un compte, contactez l’équipe du studio.</p>
+  return <form onSubmit={submit} className={s.form} aria-label="Connexion" aria-busy={busy}>
+    <div><label htmlFor="email">Adresse e-mail</label><input id="email" name="email" type="email" autoComplete="username" placeholder="vous@exemple.com" required maxLength={254} disabled={busy}/></div>
+    <div><div className={s.passwordLabel}><label htmlFor="password">Mot de passe</label><Link href="/connexion/mot-de-passe">Mot de passe oublié ?</Link></div><div className={s.password}><input id="password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" required maxLength={128} disabled={busy}/><button type="button" disabled={busy} onClick={()=>setShowPassword(!showPassword)} aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"} aria-pressed={showPassword}>{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button></div></div>
+    {error && <p role="alert" className={s.error}>{error}</p>}
+    <button type="submit" className={s.submit} disabled={busy}><span>{busy ? "Connexion en cours…" : "Me connecter"}</span>{busy ? <Loader2 size={17} className={s.spinner}/> : <ArrowRight size={17}/>}</button>
   </form>;
 }

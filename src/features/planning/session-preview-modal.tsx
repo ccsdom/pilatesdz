@@ -26,7 +26,8 @@ import {
 } from "@/components/ui/dialog";
 import { COURSE_MAX_CAPACITY } from "@/domain/models/studio-offers";
 import { Button } from "@/components/ui/button";
-import { studioDateTime, type SessionDetails, type PilatesSession, type ReservationRecord } from "@/domain/models/planning";
+import { sessionPhase, studioDateTime, type SessionDetails, type PilatesSession, type ReservationRecord } from "@/domain/models/planning";
+import { usePlanningTime } from "./use-planning-time";
 
 interface SessionPreviewModalProps {
   sessionId: string | null;
@@ -91,8 +92,10 @@ function LoadedSessionPreview({
   const fillPercent = session ? Math.min(100, Math.round((session.bookedCount / session.capacity) * 100)) : 0;
   const availableSeats = session ? session.capacity - session.bookedCount : 0;
   const isCancelled = session?.status === "cancelled";
-  const [now] = useState(Date.now);
-  const isPast = session ? session.startsAt <= now : false;
+  const [initialTime] = useState(Date.now);
+  const now = usePlanningTime(initialTime);
+  const hasStarted = session ? session.startsAt <= now : false;
+  const phase = session ? sessionPhase(session, now) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -108,9 +111,9 @@ function LoadedSessionPreview({
                 <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-3.5 py-1 text-xs font-bold text-rose-800">
                   <XCircle size={14} /> Séance annulée
                 </span>
-              ) : isPast ? (
+              ) : phase === "ended" || phase === "ongoing" ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-[#eee5d8] px-3.5 py-1 text-xs font-medium text-[#736857]">
-                  Séance terminée
+                  {phase === "ongoing" ? "Séance en cours" : "Séance terminée"}
                 </span>
               ) : availableSeats === 0 ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3.5 py-1 text-xs font-bold text-amber-800">
@@ -241,7 +244,7 @@ function LoadedSessionPreview({
         {session && (
           <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-[#eee5d8]">
             <div className="flex flex-wrap items-center gap-2">
-              {!isCancelled && !isPast && session.bookedCount < session.capacity && (
+              {!isCancelled && !hasStarted && session.bookedCount < session.capacity && (
                 <Link
                   href={`/crm/planning/${session.id}/inscrire`}
                   onClick={() => onOpenChange(false)}

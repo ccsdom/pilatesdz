@@ -1,4 +1,5 @@
 import Link from "next/link";
+import styles from "@/features/auth/access-manager.module.css";
 import { FieldPath } from "firebase-admin/firestore";
 import { getPageAccess } from "@/lib/auth/page-access";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
@@ -70,11 +71,8 @@ export default async function Page({
 
   return (
     <ClientShell centerId={result.access.centerId} active="access">
-      <header className="relative overflow-hidden rounded-3xl border border-[#b7893b]/25 bg-[#201f1a] p-6 text-[#fff8eb] sm:p-8">
-        <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full border border-[#d8b97f]/15" />
-        <div className="relative flex items-start justify-between gap-5"><div><p className="mb-4 text-[10px] font-medium uppercase tracking-[0.25em] text-[#d8b97f]">Administration · Votre centre</p>
-        <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl">Gestion des accès<span className="text-[#d8b97f]">.</span></h1>
-        <p className="mt-3 max-w-xl text-sm leading-6 text-[#c6bcab]">Un espace personnel pour chaque cliente, des accès maîtrisés pour votre équipe.</p></div><span className="hidden rounded-2xl border border-[#d8b97f]/20 bg-[#d8b97f]/10 p-4 text-[#d8b97f] sm:inline-flex"><KeyRound size={30} strokeWidth={1.2} /></span></div>
+      <header className={styles.hero}>
+        <div className={styles.heroBody}><div><p className={styles.eyebrow}>PILATES DZ · Administration</p><h1>Les bons accès,<br /><em>pour chaque personne.</em></h1><p className={styles.intro}>Un espace personnel pour vos clientes, un accès au CRM pour vos managers.</p></div><span className={styles.heroIcon} aria-hidden="true"><KeyRound size={36} strokeWidth={1.2} /></span></div>
         <p className="relative mt-6 flex items-start gap-2.5 border-t border-white/10 pt-5 text-xs leading-5 text-[#c6bcab]"><ShieldCheck size={16} className="mt-0.5 shrink-0 text-[#d8b97f]" /><span>
           {process.env.FIREBASE_USE_EMULATORS === "false"
             ? "Les invitations sont envoyées par e-mail via Firebase. La personne invitée choisit son mot de passe. Aucun lien de connexion privé n’est affiché ici."

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { SINGLE_SESSION_OFFERS, formatDzd } from "@/domain/models/studio-offers";
+import v from "./booking-wizard.module.css";
 import { BookingDatePicker } from "./booking-date-picker";
 import { bookingCalendarDate, firstBookingDay, initialBookingDay } from "@/domain/models/public-booking-calendar";
 import { 
@@ -204,18 +205,18 @@ export function BookingWizard() {
   const selectedDateFr = formatDateFr(selectedDate);
 
   return (
-    <div className="w-full">
-      {step < 5 && <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#cdae72]/50 bg-white p-5"><p className="text-sm text-[#61574b]">Vous connaissez déjà le studio ? Retrouvez vos réservations et votre forfait.</p><Link href={`/espace-cliente?day=${day}`} className="rounded-full bg-[#1c1917] px-5 py-3 text-xs font-semibold text-white">Me connecter</Link></div>}
+    <div className={v.wizard}>
+      {step < 5 && <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-sm border border-[#cdae72]/50 bg-white p-5"><p className="text-sm text-[#61574b]">Déjà cliente ? Retrouvez votre forfait et vos réservations.</p><Link href={`/espace-cliente?day=${day}`} className="rounded-full bg-[#1c1917] px-5 py-3 text-xs font-semibold text-white">Me connecter</Link></div>}
       {/* Wizard Progress Header */}
       {step < 5 && (
         <div className="mb-10">
           <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[#786c5e] mb-3">
             <span>Étape {step} sur 4</span>
             <span>
-              {step === 1 && "Première visite ou séance libre"}
-              {step === 2 && "Public & Créneau Horaires"}
-              {step === 3 && "Sélection Date & Heure"}
-              {step === 4 && "Vos Coordonnées & Validation"}
+              {step === 1 && "Votre séance"}
+              {step === 2 && "Votre public"}
+              {step === 3 && "Date et heure"}
+              {step === 4 && "Vos coordonnées"}
             </span>
           </div>
 
@@ -233,9 +234,9 @@ export function BookingWizard() {
       {step === 1 && (
         <div className="space-y-8 animate-fadeIn">
           <div>
-            <h2 className="font-serif text-3xl font-light text-[#1c1917]">Réservez votre place</h2>
+            <h2 className="font-serif text-3xl font-light text-[#1c1917]">Choisissez votre séance</h2>
             <p className="mt-2 text-sm text-[#61574b]">
-              Chaque créneau dure une heure et accueille quatre personnes maximum. Déjà cliente ? Connectez-vous pour réserver avec votre forfait.
+              Une découverte ou une séance à l’unité. Le règlement se fait au studio.
             </p>
           </div>
 
@@ -244,12 +245,13 @@ export function BookingWizard() {
               const isSelected = selectedPractice.id === p.id;
               return (
                 <div
-                  key={p.id}
+                  key={p.id} role="button" tabIndex={0} aria-pressed={isSelected}
+                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedPractice(p); } }}
                   onClick={() => setSelectedPractice(p)}
-                  className={`group relative cursor-pointer rounded-3xl border p-6 transition-all duration-300 ${
+                  className={`group relative cursor-pointer rounded-none border p-6 transition-all duration-300 ${
                     isSelected
-                      ? "border-[#b7893b] bg-white shadow-xl shadow-[#b7893b]/10 ring-2 ring-[#b7893b]/30"
-                      : "border-[#e5dacf] bg-white/70 hover:border-[#cdae72] hover:bg-white hover:shadow-md"
+                      ? "border-[#b7893b] bg-white shadow-none shadow-[#b7893b]/10 ring-2 ring-[#b7893b]/30"
+                      : "border-[#e5dacf] bg-white/70 hover:border-[#cdae72] hover:bg-white hover:shadow-none"
                   }`}
                 >
                   {p.badge && (
@@ -292,9 +294,9 @@ export function BookingWizard() {
             <button
               type="button"
               onClick={() => setStep(2)}
-              className="inline-flex items-center gap-2 rounded-full bg-[#1c1917] px-8 py-4 text-sm font-semibold text-white transition-all hover:bg-[#b7893b] hover:text-black shadow-lg"
+              className="inline-flex items-center gap-2 rounded-full bg-[#1c1917] px-8 py-4 text-sm font-semibold text-white transition-all hover:bg-[#b7893b] hover:text-black shadow-none"
             >
-              <span>Continuer (Créneau Horaires)</span>
+              <span>Continuer</span>
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
@@ -314,15 +316,17 @@ export function BookingWizard() {
           {/* Gender Selector Cards */}
           <div className="grid gap-6 sm:grid-cols-2">
             <div
+              role="button" tabIndex={0} aria-pressed={gender === "femme"}
+              onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setGender("femme"); } }}
               onClick={() => setGender("femme")}
-              className={`cursor-pointer rounded-3xl border p-8 transition-all duration-300 ${
+              className={`cursor-pointer rounded-none border p-8 transition-all duration-300 ${
                 gender === "femme"
-                  ? "border-[#b7893b] bg-white shadow-xl ring-2 ring-[#b7893b]/30"
+                  ? "border-[#b7893b] bg-white shadow-none ring-2 ring-[#b7893b]/30"
                   : "border-[#e5dacf] bg-white/70 hover:border-[#cdae72] hover:bg-white"
               }`}
             >
               <div className="flex items-center justify-between">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#b7893b]/15 text-[#99702d]">
+                <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-[#b7893b]/15 text-[#99702d]">
                   <Users className="h-6 w-6" />
                 </div>
                 {gender === "femme" && (
@@ -346,15 +350,17 @@ export function BookingWizard() {
             </div>
 
             <div
+              role="button" tabIndex={0} aria-pressed={gender === "homme"}
+              onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setGender("homme"); } }}
               onClick={() => setGender("homme")}
-              className={`cursor-pointer rounded-3xl border p-8 transition-all duration-300 ${
+              className={`cursor-pointer rounded-none border p-8 transition-all duration-300 ${
                 gender === "homme"
-                  ? "border-[#b7893b] bg-white shadow-xl ring-2 ring-[#b7893b]/30"
+                  ? "border-[#b7893b] bg-white shadow-none ring-2 ring-[#b7893b]/30"
                   : "border-[#e5dacf] bg-white/70 hover:border-[#cdae72] hover:bg-white"
               }`}
             >
               <div className="flex items-center justify-between">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1c1917]/10 text-[#1c1917]">
+                <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-[#1c1917]/10 text-[#1c1917]">
                   <Users className="h-6 w-6" />
                 </div>
                 {gender === "homme" && (
@@ -379,7 +385,7 @@ export function BookingWizard() {
           </div>
 
           {/* Info Banner on Studio Capacity */}
-          <div className="rounded-2xl border border-[#dccbb0] bg-[#faf7f2] p-5 flex items-start gap-4 text-xs text-[#524b42]">
+          <div className="rounded-sm border border-[#dccbb0] bg-[#faf7f2] p-5 flex items-start gap-4 text-xs text-[#524b42]">
             <Info className="h-5 w-5 text-[#99702d] shrink-0 mt-0.5" />
             <div>
               <span className="font-bold text-[#1c1917]">4 places par heure :</span> Les disponibilités sont partagées avec le planning du studio. Le studio est fermé le vendredi.
@@ -399,9 +405,9 @@ export function BookingWizard() {
             <button
               type="button"
               onClick={() => setStep(3)}
-              className="inline-flex items-center gap-2 rounded-full bg-[#1c1917] px-8 py-4 text-sm font-semibold text-white transition-all hover:bg-[#b7893b] hover:text-black shadow-lg"
+              className="inline-flex items-center gap-2 rounded-full bg-[#1c1917] px-8 py-4 text-sm font-semibold text-white transition-all hover:bg-[#b7893b] hover:text-black shadow-none"
             >
-              <span>Choisir la Date & l&apos;Heure</span>
+              <span>Choisir mon créneau</span>
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
@@ -414,14 +420,14 @@ export function BookingWizard() {
           <div>
             <h2 className="font-serif text-3xl font-light text-[#1c1917]">Choisissez la date et l&apos;heure</h2>
             <p className="mt-2 text-sm text-[#61574b]">
-              Créneaux affichés pour : <strong className="text-[#99702d] uppercase">{gender === "femme" ? "Femmes" : "Hommes"}</strong> • Discipline : <strong>{selectedPractice.name}</strong>
+              Créneaux affichés pour : <strong className="text-[#99702d] uppercase">{gender === "femme" ? "Femmes" : "Hommes"}</strong> • Séance : <strong>{selectedPractice.name}</strong>
             </p>
           </div>
 
           <BookingDatePicker value={selectedDateFr.iso} minimum={minimumDay} onChange={day => handleSelectDate(bookingCalendarDate(day))} />
 
           {/* Time Slots Grid */}
-          <div className="rounded-3xl border border-[#e5dacf] bg-white p-6 sm:p-8 shadow-sm">
+          <div className="rounded-none border border-[#e5dacf] bg-white p-6 sm:p-8 shadow-sm">
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#f0e6d8]">
               <div>
                 <h3 className="font-serif text-xl font-normal text-[#1c1917]">
@@ -458,15 +464,15 @@ export function BookingWizard() {
 
                   return (
                     <button
-                      key={slot.time}
+                      key={slot.time} aria-pressed={isSelected}
                       type="button"
                       disabled={isFull}
                       onClick={() => setSelectedSlot(slot.time)}
-                      className={`relative flex flex-col justify-between rounded-2xl border p-5 text-left transition-all ${
+                      className={`relative flex flex-col justify-between rounded-sm border p-5 text-left transition-all ${
                         isFull
                           ? "border-[#e5dacf] bg-[#faf7f2] opacity-50 cursor-not-allowed"
                           : isSelected
-                          ? "border-[#b7893b] bg-[#faf7f2] shadow-md ring-2 ring-[#b7893b]"
+                          ? "border-[#b7893b] bg-[#faf7f2] shadow-none ring-2 ring-[#b7893b]"
                           : "border-[#e5dacf] bg-white hover:border-[#cdae72] hover:shadow-sm"
                       }`}
                     >
@@ -522,13 +528,13 @@ export function BookingWizard() {
               type="button"
               disabled={!selectedSlot}
               onClick={() => setStep(4)}
-              className={`inline-flex items-center gap-2 rounded-full px-8 py-4 text-sm font-semibold text-white transition-all shadow-lg ${
+              className={`inline-flex items-center gap-2 rounded-full px-8 py-4 text-sm font-semibold text-white transition-all shadow-none ${
                 selectedSlot
                   ? "bg-[#1c1917] hover:bg-[#b7893b] hover:text-black cursor-pointer"
                   : "bg-gray-300 cursor-not-allowed"
               }`}
             >
-              <span>Valider vos Coordonnées</span>
+              <span>Continuer</span>
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
@@ -548,10 +554,10 @@ export function BookingWizard() {
           <div className="grid gap-8 lg:grid-cols-12">
             {/* Form Inputs Column */}
             <div className="lg:col-span-7">
-              <form onSubmit={handleSubmitBooking} className="rounded-3xl border border-[#e5dacf] bg-white p-6 sm:p-8 shadow-sm space-y-6">
+              <form onSubmit={handleSubmitBooking} className="rounded-none border border-[#e5dacf] bg-white p-6 sm:p-8 shadow-sm space-y-6">
                 
                 {formError && (
-                  <div className="rounded-2xl bg-red-50 border border-red-200 p-4 text-xs text-red-700 flex items-center gap-2">
+                  <div className="rounded-sm bg-red-50 border border-red-200 p-4 text-xs text-red-700 flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     <span>{formError}</span>
                   </div>
@@ -567,7 +573,7 @@ export function BookingWizard() {
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="Ex: Myriam Benali"
-                    className="w-full rounded-2xl border border-[#dccbb0] bg-[#faf7f2] px-4 py-3.5 text-sm text-[#1c1917] focus:border-[#b7893b] focus:bg-white focus:outline-none transition-all"
+                    className="w-full rounded-sm border border-[#dccbb0] bg-[#faf7f2] px-4 py-3.5 text-sm text-[#1c1917] focus:border-[#b7893b] focus:bg-white focus:outline-none transition-all"
                   />
                 </div>
 
@@ -582,7 +588,7 @@ export function BookingWizard() {
                       value={clientPhone}
                       onChange={(e) => setClientPhone(e.target.value)}
                       placeholder="05 53 02 17 14"
-                      className="w-full rounded-2xl border border-[#dccbb0] bg-[#faf7f2] px-4 py-3.5 text-sm text-[#1c1917] focus:border-[#b7893b] focus:bg-white focus:outline-none transition-all"
+                      className="w-full rounded-sm border border-[#dccbb0] bg-[#faf7f2] px-4 py-3.5 text-sm text-[#1c1917] focus:border-[#b7893b] focus:bg-white focus:outline-none transition-all"
                     />
                   </div>
 
@@ -595,7 +601,7 @@ export function BookingWizard() {
                       value={clientEmail}
                       onChange={(e) => setClientEmail(e.target.value)}
                       placeholder="votre.email@exemple.com"
-                      className="w-full rounded-2xl border border-[#dccbb0] bg-[#faf7f2] px-4 py-3.5 text-sm text-[#1c1917] focus:border-[#b7893b] focus:bg-white focus:outline-none transition-all"
+                      className="w-full rounded-sm border border-[#dccbb0] bg-[#faf7f2] px-4 py-3.5 text-sm text-[#1c1917] focus:border-[#b7893b] focus:bg-white focus:outline-none transition-all"
                     />
                     <p className="mt-2 text-xs text-[#61574b]">Nécessaire pour recevoir votre accès et gérer vos réservations en ligne. Sans e-mail, contactez le studio pour activer votre espace.</p>
                   </div>
@@ -608,7 +614,7 @@ export function BookingWizard() {
                   <select
                     value={clientLevel}
                     onChange={(e) => setClientLevel(e.target.value)}
-                    className="w-full rounded-2xl border border-[#dccbb0] bg-[#faf7f2] px-4 py-3.5 text-sm text-[#1c1917] focus:border-[#b7893b] focus:bg-white focus:outline-none transition-all"
+                    className="w-full rounded-sm border border-[#dccbb0] bg-[#faf7f2] px-4 py-3.5 text-sm text-[#1c1917] focus:border-[#b7893b] focus:bg-white focus:outline-none transition-all"
                   >
                     <option value="Débutant">Débutant(e) — Premier cours au studio</option>
                     <option value="Intermédiaire">Intermédiaire — Pratique occasionnelle</option>
@@ -625,7 +631,7 @@ export function BookingWizard() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <label 
                       onClick={() => setPaymentMethod("studio")}
-                      className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-all ${
+                      className={`flex cursor-pointer items-center gap-3 rounded-sm border p-4 transition-all ${
                         paymentMethod === "studio"
                           ? "border-[#b7893b] bg-[#faf7f2] font-semibold text-[#1c1917]"
                           : "border-[#e5dacf] bg-white text-[#61574b]"
@@ -641,7 +647,7 @@ export function BookingWizard() {
                       <span className="text-xs">Règlement au studio (Espèces)</span>
                     </label>
 
-                    <Link href="/espace-cliente" className="rounded-2xl border border-[#e5dacf] p-4 text-xs underline">Déjà cliente ? Connectez-vous pour utiliser votre forfait.</Link>
+                    <Link href="/espace-cliente" className="rounded-sm border border-[#e5dacf] p-4 text-xs underline">Déjà cliente ? Connectez-vous pour utiliser votre forfait.</Link>
                   </div>
                 </div>
 
@@ -658,7 +664,7 @@ export function BookingWizard() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="inline-flex items-center gap-2 rounded-full bg-[#1c1917] px-8 py-4 text-sm font-semibold text-white transition-all hover:bg-[#b7893b] hover:text-black shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#1c1917] px-8 py-4 text-sm font-semibold text-white transition-all hover:bg-[#b7893b] hover:text-black shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <>
@@ -668,7 +674,7 @@ export function BookingWizard() {
                     ) : (
                       <>
                         <CheckCircle2 className="h-4 w-4 text-[#e5be78]" />
-                        <span>Confirmer ma Réservation</span>
+                        <span>Confirmer ma réservation</span>
                       </>
                     )}
                   </button>
@@ -679,14 +685,14 @@ export function BookingWizard() {
 
             {/* Summary Sidebar Column */}
             <div className="lg:col-span-5">
-              <div className="sticky top-28 rounded-3xl border border-[#cdae72]/40 bg-gradient-to-b from-[#1c1917] to-[#2c2621] p-6 sm:p-8 text-white shadow-xl space-y-6">
+              <div className="sticky top-28 rounded-none border border-[#cdae72]/40 bg-gradient-to-b from-[#1c1917] to-[#2c2621] p-6 sm:p-8 text-white shadow-none space-y-6">
                 <div className="flex items-center justify-between border-b border-white/10 pb-4">
                   <span className="text-xs font-bold uppercase tracking-widest text-[#e5be78]">Récapitulatif</span>
                   <Sparkles className="h-4 w-4 text-[#e5be78]" />
                 </div>
 
                 <div>
-                  <div className="text-xs text-white/60 uppercase tracking-wider">Discipline</div>
+                  <div className="text-xs text-white/60 uppercase tracking-wider">Séance</div>
                   <div className="mt-1 font-serif text-2xl font-light text-white">{selectedPractice.name}</div>
                   <div className="text-xs text-[#e5be78] mt-1">{selectedPractice.category} • {selectedPractice.duration}</div>
                 </div>
@@ -703,7 +709,7 @@ export function BookingWizard() {
                   </div>
 
                   <div className="flex justify-between">
-                    <span className="text-white/60">Heure du cours :</span>
+                    <span className="text-white/60">Heure de la séance :</span>
                     <span className="font-semibold text-[#e5be78]">{selectedSlot}</span>
                   </div>
 
@@ -718,7 +724,7 @@ export function BookingWizard() {
                   <span className="font-serif text-2xl font-bold text-[#e5be78]">{selectedPractice.price}</span>
                 </div>
 
-                <div className="rounded-2xl bg-white/10 p-4 text-[11px] text-white/70 flex items-start gap-2">
+                <div className="rounded-sm bg-white/10 p-4 text-[11px] text-white/70 flex items-start gap-2">
                   <Shield className="h-4 w-4 shrink-0 text-[#e5be78] mt-0.5" />
                   <span>Pour gérer votre réservation, utilisez votre espace cliente ou contactez le studio au 05 53 02 17 14.</span>
                 </div>
@@ -751,7 +757,7 @@ export function BookingWizard() {
           </div>
 
           {/* Ticket Card */}
-          <div className="rounded-3xl border border-[#cdae72]/40 bg-white p-8 shadow-xl text-left space-y-6">
+          <div className="rounded-none border border-[#cdae72]/40 bg-white p-8 shadow-none text-left space-y-6">
             <div className="flex items-center justify-between border-b border-[#f0e6d8] pb-4">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#99702d]">Code de Réservation</span>
@@ -768,7 +774,7 @@ export function BookingWizard() {
 
             <div className="grid gap-4 sm:grid-cols-2 text-xs">
               <div>
-                <span className="text-[#706659]">Discipline :</span>
+                <span className="text-[#706659]">Séance :</span>
                 <div className="font-semibold text-[#1c1917] text-sm mt-0.5">{selectedPractice.name}</div>
               </div>
 
@@ -788,7 +794,7 @@ export function BookingWizard() {
               </div>
             </div>
 
-            <div className="rounded-2xl bg-[#faf7f2] p-4 text-xs space-y-2 text-[#524b42]">
+            <div className="rounded-sm bg-[#faf7f2] p-4 text-xs space-y-2 text-[#524b42]">
               <div className="flex items-center gap-2 font-semibold text-[#1c1917]">
                 <MapPin className="h-4 w-4 text-[#99702d]" />
                 <span>Centre Commercial Zemzem, Bir Mourad Raïs</span>
@@ -799,7 +805,7 @@ export function BookingWizard() {
             </div>
 
             {/* Account Creation & Password Setup Card */}
-            <div className="rounded-2xl border border-[#b7893b]/40 bg-[#faf6ef] p-5 text-xs space-y-3">
+            <div className="rounded-sm border border-[#b7893b]/40 bg-[#faf6ef] p-5 text-xs space-y-3">
               <div className="flex items-center gap-2 font-bold text-[#99702d] text-sm">
                 <KeyRound className="h-4.5 w-4.5 text-[#b7893b]" />
                 <span>Activer votre espace cliente</span>
@@ -837,7 +843,7 @@ export function BookingWizard() {
 
             <Link
               href="/espace-cliente"
-              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-[#1c1917] px-8 py-3.5 text-xs font-semibold text-white hover:bg-[#b7893b] hover:text-black shadow-md"
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-[#1c1917] px-8 py-3.5 text-xs font-semibold text-white hover:bg-[#b7893b] hover:text-black shadow-none"
             >
               <span>Accéder à mon espace cliente</span>
               <ArrowRight className="h-4 w-4" />

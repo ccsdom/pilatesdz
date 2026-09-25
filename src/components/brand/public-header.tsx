@@ -38,7 +38,7 @@ export function PublicHeader() {
 
   const navLinks = [
     { href: "/le-studio", label: "Le Studio", active: pathname === "/le-studio" || pathname === "/studio" },
-    { href: "/les-cours", label: "Les Cours", active: pathname === "/les-cours" || pathname === "/pratiques" || pathname === "/nos-pratiques" },
+    { href: "/les-cours", label: "La pratique", active: pathname === "/les-cours" || pathname === "/pratiques" || pathname === "/nos-pratiques" },
     { href: "/tarifs", label: "Tarifs", active: pathname === "/tarifs" },
     { href: "/contact", label: "Contact", active: pathname === "/contact" },
   ];
@@ -46,7 +46,7 @@ export function PublicHeader() {
   return (
     <Dialog.Root open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
       {/* Top Luxury Bar */}
-      <div className="hidden border-b border-[#e7dac8]/40 bg-[#1c1917] px-6 py-2 text-xs text-[#d5ae65] sm:block">
+      <div className="hidden border-b border-[#e7dac8]/40 bg-[#1c1917] px-6 py-2 text-xs text-[#d5ae65] lg:block">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-6 text-white/80">
             <span className="flex items-center gap-1.5">
@@ -70,8 +70,8 @@ export function PublicHeader() {
       </div>
 
       <header className="sticky top-0 z-50 border-b border-[#e7dac8]/60 bg-[#faf7f2]/90 backdrop-blur-xl transition-all duration-300">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 sm:px-6 lg:px-10">
-          <BrandLockup compact />
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-10">
+          <Link href="/" aria-label="Pilates Center — Accueil"><BrandLockup compact /></Link>
 
           {/* Desktop Navigation */}
           <nav aria-label="Navigation principale" className="hidden items-center gap-9 text-xs font-medium uppercase tracking-[0.2em] text-[#524b42] lg:flex">
@@ -79,6 +79,7 @@ export function PublicHeader() {
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={link.active ? "page" : undefined}
                 className={`transition-colors hover:text-[#99702d] ${link.active ? "text-[#99702d] font-bold border-b-2 border-[#b7893b] pb-0.5" : ""}`}
               >
                 {link.label}
@@ -87,7 +88,7 @@ export function PublicHeader() {
           </nav>
 
           {/* Action Buttons & Mobile Menu Trigger */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <a
               href="tel:0553021714"
               className="hidden items-center gap-2 rounded-full border border-[#cdae72]/50 bg-white/60 px-3.5 py-2 text-xs font-semibold tracking-wider text-[#38322a] transition-all hover:bg-[#f3e6d3] sm:inline-flex lg:hidden"
@@ -98,10 +99,10 @@ export function PublicHeader() {
 
             <Link
               href="/reservation"
-              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-[#1c1917] px-4 py-2 sm:px-6 sm:py-2.5 text-xs font-semibold tracking-wider text-white shadow-md transition-all duration-300 hover:bg-[#b7893b] hover:text-black hover:shadow-xl hover:shadow-[#b7893b]/20 active:scale-95"
+              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-sm bg-[#24231e] px-4 py-2 sm:px-6 sm:py-2.5 text-xs font-semibold tracking-wider text-white transition-all duration-300 hover:bg-[#b7893b] hover:text-black  active:scale-95"
             >
               <span>Réserver</span>
-              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+              <ArrowRight className="hidden h-3.5 w-3.5 transition-transform group-hover:translate-x-1 min-[390px]:block" />
             </Link>
 
             {/* Mobile Hamburger Button */}
@@ -124,7 +125,7 @@ export function PublicHeader() {
           <Dialog.Title className="sr-only">Menu du studio</Dialog.Title>
           {/* Drawer Top Bar */}
           <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-            <BrandLockup light compact />
+            <Link href="/" aria-label="Pilates Center — Accueil"><BrandLockup light compact /></Link>
             <button
               type="button"
               onClick={() => setMobileMenuOpen(false)}
@@ -200,7 +201,7 @@ export function PublicHeader() {
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b7893b] py-4 text-sm font-bold text-black shadow-xl shadow-[#b7893b]/25 active:scale-[0.98] transition-all"
               >
                 <Sparkles className="h-4 w-4" />
-                <span>Réserver un Cours en Ligne</span>
+                <span>Réserver une séance</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
 

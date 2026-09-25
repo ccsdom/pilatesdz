@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
-import { CalendarDays, CircleUserRound, Search, UsersRound, WalletCards } from "lucide-react";
+import { ArrowUpRight, CalendarDays, CircleUserRound, Search, UsersRound, WalletCards } from "lucide-react";
 
 import type { DaySummary } from "@/domain/models/dashboard";
 import Link from "next/link";
+import styles from "./dashboard.module.css";
 
 
 
@@ -13,10 +14,19 @@ export function CrmPreview({ dayLabel, summary, attendance, analytics, canManage
     { icon: WalletCards, value: summary.available, label: "Places non réservées", note: "Sur les séances maintenues du jour", key: "available" },
     { icon: CalendarDays, value: summary.occupancy === null ? "—" : `${summary.occupancy} %`, label: "Taux de remplissage", note: "Réservations / capacité du jour", key: "occupancy" },
   ];
-  return <div><header className="flex h-[78px] items-center justify-between border-b border-[#d9cdb9] bg-[#fbf8f2] dark:bg-[#181613] dark:border-[#332e26] px-4 sm:px-7"><div className="flex items-center gap-3"><div><p className="text-xs uppercase tracking-[.18em] text-[#957035]">{dayLabel}</p><h1 className="mt-1 text-xl font-semibold">Bonjour</h1></div></div><div className="flex items-center gap-3"><Link href="/crm/clientes" className="hidden items-center gap-2 rounded-full border border-[#d9cdb9] bg-white px-4 py-2.5 text-sm text-[#6b645a] sm:flex"><Search className="h-4 w-4"/> Rechercher une cliente</Link>{canManageAccess && <Link href="/crm/acces" aria-label="Gestion des accès"><CircleUserRound className="h-9 w-9 text-[#9d7837]"/></Link>}</div></header>
-      <div className="mt-7 space-y-7"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-sm text-[#746d63] dark:text-[#b7a993]">Journée complète, séances passées et à venir. Actualisez la page pour mettre à jour les chiffres.</p><h2 className="mt-1 font-serif text-4xl">Tableau de bord</h2></div><Link href="/crm/planning" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#111] px-5 py-3 text-sm font-semibold text-white"><CalendarDays className="h-4 w-4 text-[#d5ae65]"/> Gérer les séances</Link></div>
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{stats.map(({icon:Icon,value,label,note,key})=><article key={label} className="rounded-2xl border border-[#ded4c3] bg-[#fffdf9] dark:border-[#332e26] dark:bg-[#181613] p-5 shadow-[0_10px_35px_rgba(72,54,26,.05)]"><div className="flex items-start justify-between"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ede0c8] text-[#8d6729]"><Icon className="h-5 w-5"/></span></div><p data-testid={`dashboard-${key}`} className="mt-6 text-2xl font-semibold">{value}</p><p className="mt-1 text-sm text-[#6f685e] dark:text-[#b7a993]">{label}</p><p className="mt-4 text-xs font-medium text-[#98702e] dark:text-[#d5ae65]">{note}</p></article>)}</section>
-      {analytics}
-      {attendance}
-      </div></div>;
+  return <div className={styles.dashboard}>
+    <header className={styles.hero}>
+      <div className={styles.heroTop}><p className={styles.eyebrow}>PILATES DZ · Gestion du centre</p><span className={styles.date}><CalendarDays size={14} aria-hidden="true" />{dayLabel}</span></div>
+      <div className={styles.heroBody}>
+        <div><p className={styles.welcome}>Bonjour,</p><h1>Votre centre,<br /><em>en un regard.</em></h1><p className={styles.intro}>Une vision claire de votre activité, pour garder toute votre attention sur l’essentiel.</p></div>
+        <div className={styles.heroActions}><Link href="/crm/planning" className={styles.primary}><CalendarDays size={17} aria-hidden="true" />Gérer les séances<ArrowUpRight size={17} aria-hidden="true" /></Link><Link href="/crm/clientes" className={styles.search}><Search size={16} aria-hidden="true" />Rechercher une cliente</Link>{canManageAccess && <Link href="/crm/acces" className={styles.access}><CircleUserRound size={15} aria-hidden="true" />Gestion des accès</Link>}</div>
+      </div>
+    </header>
+    <section aria-labelledby="dashboard-today">
+      <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>01 — Aujourd’hui</p><h2 id="dashboard-today">Le rythme du jour</h2></div><p className={styles.caption}>Journée complète, séances passées et à venir.<br />Actualisez la page pour mettre à jour les chiffres.</p></div>
+      <div className={styles.stats}>{stats.map(({icon:Icon,value,label,note,key})=><article key={label} className={styles.stat}><div className={styles.statTop}><p>{label}</p><Icon size={19} aria-hidden="true" /></div><p data-testid={"dashboard-" + key} className={styles.value}>{value}</p><p className={styles.note}>{note}</p></article>)}</div>
+    </section>
+    <section aria-labelledby="dashboard-followup"><div className={styles.sectionHeading}><div><p className={styles.eyebrow}>02 — Suivi du centre</p><h2 id="dashboard-followup">L’attention aux détails</h2></div></div><div className={styles.followup}>{attendance}</div></section>
+    <div className={styles.analytics}>{analytics}</div>
+  </div>;
 }

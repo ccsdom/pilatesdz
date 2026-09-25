@@ -1,324 +1,68 @@
-import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Sparkles, Check, Phone, Heart } from "lucide-react";
-import { BrandLockup } from "@/components/brand/brand-lockup";
+import Link from "next/link";
+import { ArrowDown, ArrowRight, ArrowUpRight, Plus } from "lucide-react";
+import { BrandLockup, Lotus } from "@/components/brand/brand-lockup";
 import { PublicHeader } from "@/components/brand/public-header";
 import { PublicMobileBottomNav } from "@/components/brand/public-mobile-bottom-nav";
-import { COURSE_DURATION_MINUTES, COURSE_MAX_CAPACITY } from "@/domain/models/studio-offers";
+import { COURSE_DURATION_MINUTES, COURSE_MAX_CAPACITY, SINGLE_SESSION_OFFERS, formatDzd } from "@/domain/models/studio-offers";
+import s from "@/features/public-site/public-site.module.css";
+import v from "./practices.module.css";
 
 export const metadata = {
-  title: "Les Cours · Pilates Reformer & Sol · Pilates Center Alger",
-  description: "Découvrez nos cours de Pilates à Bir Mourad Raïs : Reformer, Sol Matwork, Cours Duo et Coaching Privé Individuel.",
+  title: "La pratique · Pilates Reformer & Sol · Pilates Center Alger",
+  description: "Explorez le Pilates Reformer et au sol à Bir Mourad Raïs. Des séances de 60 minutes, quatre places maximum et une pratique à votre rythme.",
 };
 
 export default function LesCoursPage() {
-  return (
-    <div className="min-h-screen bg-[#faf7f2] text-[#1c1917] font-sans antialiased selection:bg-[#b7893b] selection:text-white overflow-x-hidden pb-16 md:pb-0">
-      
-      {/* Dynamic Background Glows */}
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[700px] w-[700px] -translate-x-1/2 rounded-full bg-radial from-[#e8d5b7]/40 via-[#f3e6d3]/20 to-transparent blur-3xl" />
-        <div className="absolute top-[40%] -right-40 h-[600px] w-[600px] rounded-full bg-radial from-[#d4af37]/15 via-transparent to-transparent blur-3xl" />
-        <div className="absolute top-[70%] -left-40 h-[600px] w-[600px] rounded-full bg-radial from-[#c5a059]/15 via-transparent to-transparent blur-3xl" />
-      </div>
-
-      <PublicHeader />
-
-      <main className="relative z-10">
-        
-        {/* HERO LES COURS */}
-        <section className="relative mx-auto max-w-7xl px-6 pt-16 pb-16 lg:px-10 lg:pt-24 lg:pb-20">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-[#b7893b]/30 bg-[#b7893b]/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-[#9a712e]">
-              <Sparkles className="h-3.5 w-3.5" /> Méthode & Disciplines du Studio
-            </div>
-            
-            <h1 className="mt-8 font-serif text-[clamp(2.8rem,5.5vw,5.2rem)] font-light leading-[0.98] tracking-tight text-[#1c1917]">
-              L’art du mouvement <br />
-              <span className="relative inline-block font-serif italic text-[#b7893b]">
-                conscient & précis.
-                <svg className="absolute -bottom-2 left-0 w-full text-[#cdae72]/40" viewBox="0 0 200 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M2 10C50 3 150 3 198 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-                </svg>
-              </span>
-            </h1>
-            
-            <p className="mt-8 text-lg leading-relaxed text-[#61574b] lg:text-xl">
-              Quatre approches complémentaires pensées pour sculpter votre silhouette, redresser votre posture et vous offrir une profonde sensation de bien-être physique et mental.
-            </p>
+  return <div className={s.site}>
+    <a href="#pratique-contenu" className={s.skip}>Aller au contenu</a>
+    <PublicHeader />
+    <main id="pratique-contenu">
+      <section className={`${s.wrap} ${v.intro}`}>
+        <nav aria-label="Fil d’Ariane" className={v.breadcrumb}><Link href="/">Accueil</Link><span aria-hidden="true">/</span><span aria-current="page">La pratique</span></nav>
+        <div className={v.hero}>
+          <div className={v.heroCopy}>
+            <p className={s.eyebrow}>La méthode Pilates · Alger</p>
+            <h1>La force du geste.<br /><em>La liberté<br />du mouvement.</em></h1>
+            <p className={v.description}>Sur Reformer ou sur tapis, prenez le temps de ressentir, de respirer et d’explorer votre équilibre. Une pratique attentive, à votre rythme.</p>
+            <Link href="/reservation" className={s.button}>Trouver mon créneau <ArrowUpRight size={18}/></Link>
+            <div className={v.heroNote}><span>{COURSE_DURATION_MINUTES} minutes pour vous</span><span>{COURSE_MAX_CAPACITY} places maximum</span></div>
           </div>
-        </section>
-
-        {/* PRATIQUE 1 : PILATES REFORMER */}
-        <section id="reformer" className="py-20 bg-white border-y border-[#e5dacf]">
-          <div className="mx-auto max-w-7xl px-6 lg:px-10">
-            <div className="grid gap-12 lg:grid-cols-12 items-center">
-              
-              <div className="lg:col-span-6 space-y-6">
-                <div className="flex items-center gap-3">
-                  <span className="rounded-full bg-[#b7893b]/20 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-[#7e581b]">
-                    01 · Star du Studio
-                  </span>
-                  <span className="text-xs text-[#8c8275]">{COURSE_DURATION_MINUTES} min · {COURSE_MAX_CAPACITY} places max</span>
-                </div>
-
-                <h2 className="font-serif text-3xl font-light text-[#1c1917] sm:text-4xl">
-                  Pilates Reformer
-                </h2>
-
-                <p className="text-base leading-relaxed text-[#61574b]">
-                  Le Pilates Reformer s&apos;effectue sur un appareil composé d&apos;un chariot coulissant, de ressorts de résistance progressive, de sangles et de poulies. Cette machine offre un soutien fluide tout en augmentant l&apos;intensité du travail musculaire.
-                </p>
-
-                <div className="rounded-2xl border border-[#cdae72]/40 bg-[#faf7f2] p-6 space-y-3">
-                  <h3 className="font-serif text-lg text-[#1c1917]">Bénéfices clés du Reformer :</h3>
-                  <ul className="space-y-2.5 text-sm text-[#595146]">
-                    <li className="flex items-center gap-2.5">
-                      <Check className="h-4 w-4 text-[#8b652b] shrink-0" />
-                      <span>Allongement musculaire et tonification profonde sans impact articulaire.</span>
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <Check className="h-4 w-4 text-[#8b652b] shrink-0" />
-                      <span>Correction précise de l’alignement de la colonne vertébrale et du bassin.</span>
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <Check className="h-4 w-4 text-[#8b652b] shrink-0" />
-                      <span>Résistance adaptable à tous les niveaux (débutant à avancé).</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="pt-2 flex flex-wrap gap-4">
-                  <Link
-                    href="/reservation"
-                    className="group inline-flex items-center gap-3 rounded-full bg-[#b7893b] px-7 py-3.5 text-sm font-semibold text-black shadow-md transition-all duration-300 hover:bg-[#d7b66f]"
-                  >
-                    <span>Réserver un cours Reformer</span>
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </Link>
-                </div>
-              </div>
-
-              <div className="lg:col-span-6 flex items-center justify-center">
-                <div className="relative h-[440px] w-full max-w-[560px] overflow-hidden rounded-3xl border border-[#cdae72]/40 bg-gradient-to-b from-[#faf7f2] to-[#f4efe6] p-6 shadow-xl flex items-center justify-center">
-                  <Image
-                    src="/brand/reformer-hero-poster-illustration.png"
-                    alt="Pilates Reformer au studio Pilates Center"
-                    width={800}
-                    height={700}
-                    priority
-                    className="h-auto max-h-[380px] w-full object-contain drop-shadow-md transition-transform duration-700 hover:scale-[1.03]"
-                  />
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </section>
-
-        {/* PRATIQUE 2 : PILATES AU SOL (MATWORK) */}
-        <section id="sol" className="py-20 bg-[#faf7f2]">
-          <div className="mx-auto max-w-7xl px-6 lg:px-10">
-            <div className="grid gap-12 lg:grid-cols-12 items-center">
-              
-              <div className="lg:col-span-6 lg:order-2 space-y-6">
-                <div className="flex items-center gap-3">
-                  <span className="rounded-full bg-[#f4efe6] px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-[#8b652b]">
-                    02 · Tapis & Accessoires
-                  </span>
-                  <span className="text-xs text-[#8c8275]">{COURSE_DURATION_MINUTES} min · {COURSE_MAX_CAPACITY} places max</span>
-                </div>
-
-                <h2 className="font-serif text-3xl font-light text-[#1c1917] sm:text-4xl">
-                  Pilates au Sol (Matwork)
-                </h2>
-
-                <p className="text-base leading-relaxed text-[#61574b]">
-                  La pratique originelle sur tapis utilise la pesanteur et le poids du corps pour renforcer la ceinture abdominale, le dos et les fessiers. Des accessoires ciblés (soft balls, anneaux Pilates, élastiques) enrichissent chaque session.
-                </p>
-
-                <div className="rounded-2xl border border-[#e5dacf] bg-white p-6 space-y-3 shadow-sm">
-                  <h3 className="font-serif text-lg text-[#1c1917]">Bénéfices clés du Pilates au sol :</h3>
-                  <ul className="space-y-2.5 text-sm text-[#595146]">
-                    <li className="flex items-center gap-2.5">
-                      <Check className="h-4 w-4 text-[#8b652b] shrink-0" />
-                      <span>Renforcement intense du transverse et du plancher pelvien.</span>
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <Check className="h-4 w-4 text-[#8b652b] shrink-0" />
-                      <span>Amélioration nette de la souplesse et du contrôle respiratoire.</span>
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <Check className="h-4 w-4 text-[#8b652b] shrink-0" />
-                      <span>Apprentissage de postures fondamentales transférables au quotidien.</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="pt-2">
-                  <Link
-                    href="/reservation"
-                    className="inline-flex items-center gap-2 rounded-full border border-[#b7893b] px-7 py-3.5 text-sm font-semibold text-[#1c1917] transition-all hover:bg-[#1c1917] hover:text-white"
-                  >
-                    <span>Réserver un cours au sol</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
-              </div>
-
-              <div className="lg:col-span-6 lg:order-1">
-                <div className="relative h-[440px] w-full overflow-hidden rounded-3xl border border-[#e5dacf] bg-white p-10 shadow-lg flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[#99702d]">
-                    <span>PILATES MATWORK</span>
-                    <span>FORCE & FLEXIBILITÉ</span>
-                  </div>
-
-                  <div className="space-y-4 my-auto text-center">
-                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#b7893b]/15 text-[#99702d]">
-                      <Heart className="h-8 w-8" />
-                    </div>
-                    <h3 className="font-serif text-3xl font-light text-[#1c1917]">Maîtrise du Centrage</h3>
-                    <p className="text-sm leading-relaxed text-[#676056] max-w-md mx-auto">
-                      &quot;Un corps libre de tensions et de fatigue permet d&apos;affronter les exigences de la vie avec enthousiasme.&quot;
-                    </p>
-                  </div>
-
-                  <div className="text-center text-xs text-[#8c8275] border-t border-[#f0e8dd] pt-4">
-                    Studio Bir Mourad Raïs · Matériel fourni
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </section>
-
-        {/* PRATIQUE 3 & 4 : COLLECTIFS & INDIVIDUELS (LUXURY DARK SECTION) */}
-        <section className="py-24 bg-[#141210] text-white relative overflow-hidden">
-          <div className="pointer-events-none absolute -right-40 top-0 h-96 w-96 rounded-full bg-[#b7893b]/10 blur-[140px]" />
-          
-          <div className="mx-auto max-w-7xl px-6 lg:px-10">
-            
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <span className="text-xs font-semibold uppercase tracking-[0.3em] text-[#c79b4d]">Format des Cours</span>
-              <h2 className="mt-4 font-serif text-4xl font-light sm:text-5xl">En petit comité ou sur-mesure.</h2>
-              <p className="mt-4 text-sm text-white/60">Sélectionnez la formule la plus adaptée à vos objectifs et votre rythme.</p>
-            </div>
-
-            <div className="grid gap-8 md:grid-cols-2">
-              
-              {/* Collectifs */}
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-md flex flex-col justify-between shadow-2xl transition-all hover:border-[#b7893b]/40">
-                <div>
-                  <div className="flex items-center justify-between text-xs font-semibold text-[#c79b4d]">
-                    <span>03 · PETIT COMITÉ</span>
-                    <span>MAX {COURSE_MAX_CAPACITY} PERSONNES</span>
-                  </div>
-                  <h3 className="mt-6 font-serif text-3xl font-light text-white">Cours Collectifs</h3>
-                  <p className="mt-4 text-sm leading-relaxed text-white/65">
-                    L&apos;énergie motivante du groupe combinée à l&apos;exigence d&apos;un suivi personnalisé. Nos effectifs réduits permettent à la coach de corriger chaque placement et d&apos;adapter les variantes à chaque participante.
-                  </p>
-
-                  <ul className="mt-6 space-y-3 text-sm text-white/85">
-                    <li className="flex items-center gap-2.5">
-                      <Check className="h-4 w-4 text-[#c79b4d]" /> Ambiance conviviale et motivante
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <Check className="h-4 w-4 text-[#c79b4d]" /> Corrections posturales individuelles constantes
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <Check className="h-4 w-4 text-[#c79b4d]" /> Créneaux réguliers du Samedi au Jeudi
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="mt-10 pt-6 border-t border-white/10">
-                  <Link
-                    href="/reservation"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#b7893b] py-3.5 text-sm font-semibold text-black hover:bg-[#d7b66f] transition-all"
-                  >
-                    <span>Voir le planning des cours</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* Individuels */}
-              <div className="rounded-3xl border border-[#c79b4d]/40 bg-gradient-to-b from-white/10 to-white/5 p-8 backdrop-blur-md flex flex-col justify-between shadow-2xl transition-all hover:border-[#c79b4d]">
-                <div>
-                  <div className="flex items-center justify-between text-xs font-semibold text-[#c79b4d]">
-                    <span>04 · SUR-MESURE</span>
-                    <span>COACHING PRIVÉ 1-ON-1</span>
-                  </div>
-                  <h3 className="mt-6 font-serif text-3xl font-light text-white">Cours Individuels</h3>
-                  <p className="mt-4 text-sm leading-relaxed text-white/65">
-                    Une prise en charge exclusive 1-on-1 conçue spécifiquement selon vos besoins anatomiques (post-partum, rééducation, douleurs dorsales chroniques ou objectif athlétique précis).
-                  </p>
-
-                  <ul className="mt-6 space-y-3 text-sm text-white/85">
-                    <li className="flex items-center gap-2.5">
-                      <Check className="h-4 w-4 text-[#c79b4d]" /> Bilan postural préalable approfondi
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <Check className="h-4 w-4 text-[#c79b4d]" /> Programme sur-mesure ajusté séance par séance
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <Check className="h-4 w-4 text-[#c79b4d]" /> Créneau horaire privatisé sur demande
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="mt-10 pt-6 border-t border-white/10">
-                  <a
-                    href="tel:0553021714"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#c79b4d] py-3.5 text-sm font-semibold text-[#e5be78] hover:bg-[#c79b4d] hover:text-black transition-all"
-                  >
-                    <Phone className="h-4 w-4" />
-                    <span>Réserver un coaching privé : 05 53 02 17 14</span>
-                  </a>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-        </section>
-
-      </main>
-
-      {/* LUXURY DARK FOOTER */}
-      <footer className="border-t border-[#b7893b]/30 bg-[#0c0a09] py-14 text-white">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 px-6 lg:px-10">
-          <div className="flex w-full flex-col items-center justify-between gap-6 sm:flex-row">
-            <BrandLockup light compact />
-            
-            <p className="text-xs uppercase tracking-[0.25em] text-white/50">
-              Pilates · Équilibre · Harmonie · Bir Mourad Raïs
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 border-t border-white/10 pt-8 text-xs text-white/60">
-            <Link href="/mentions-legales" className="transition-colors hover:text-[#e5be78]">
-              Mentions Légales
-            </Link>
-            <span>•</span>
-            <Link href="/politique-de-confidentialite" className="transition-colors hover:text-[#e5be78]">
-              Politique de Confidentialité
-            </Link>
-            <span>•</span>
-            <Link href="/cgv" className="transition-colors hover:text-[#e5be78]">
-              Conditions Générales de Vente (CGV)
-            </Link>
-          </div>
-
-          <p className="text-xs text-white/40">
-            © {new Date().getFullYear()} Pilates Center Alger. Tous droits réservés.
-          </p>
+          <figure className={v.heroPhoto}>
+            <Image src="/brand/cours-pilates-alger.webp" alt="Pratique en petit groupe avec les sangles du Reformer" fill priority sizes="(min-width: 900px) 55vw, 100vw" />
+            <figcaption><span>CONTRÔLE · RESPIRATION · FLUIDITÉ</span><span>01 / LA PRATIQUE</span></figcaption>
+          </figure>
         </div>
-      </footer>
+        <nav aria-label="Explorer les pratiques" className={v.chapterNav}>
+          <a href="#reformer"><span>01</span> Le Reformer <ArrowDown size={16}/></a>
+          <a href="#sol"><span>02</span> Le Pilates au sol <ArrowDown size={16}/></a>
+          <a href="#commencer"><span>03</span> Commencer <ArrowDown size={16}/></a>
+        </nav>
+      </section>
 
-      <PublicMobileBottomNav />
+      <section id="reformer" className={`${s.wrap} ${v.reformer}`}>
+        <figure className={v.portrait}><Image src="/brand/pilates-alger.webp" alt="Mouvement sur Reformer avec les jambes soutenues par les sangles" fill sizes="(min-width: 900px) 40vw, 100vw" /><figcaption>La résistance au service du mouvement.</figcaption></figure>
+        <div className={v.practiceCopy}><p className={s.eyebrow}>01 — Pilates Reformer</p><h2>De la résistance.<br /><em>Naît la fluidité.</em></h2><p className={v.description}>Un chariot mobile, des ressorts et des sangles. Le Reformer invite à explorer chaque mouvement avec précision, en jouant sur la résistance et le contrôle.</p>
+          <div className={v.rows}>{[["Résistance modulable", "Les ressorts permettent de varier le travail selon l’exercice et votre progression."], ["Précision du geste", "Une attention portée au placement, à la coordination et à la maîtrise du mouvement."], ["Un rythme qui vous ressemble", "Découvrir les bases, affiner ses sensations, puis avancer séance après séance."]].map(([title,copy],i)=><article key={title}><span>0{i+1}</span><div><h3>{title}</h3><p>{copy}</p></div></article>)}</div>
+          <Link href="/reservation" className={s.textLink}>Découvrir les disponibilités <ArrowUpRight size={18}/></Link>
+        </div>
+      </section>
 
-    </div>
-  );
+      <section id="sol" className={v.matwork}><div className={`${s.wrap} ${v.matworkGrid}`}>
+        <div><p className={s.eyebrow}>02 — Pilates au sol</p><h2>Revenir à l’essentiel.<br /><em>Partir de soi.</em></h2><p className={v.description}>Sur tapis, le poids du corps devient le point de départ. La respiration accompagne le geste, le centre guide le mouvement et chaque enchaînement invite à une présence plus attentive.</p><p className={v.description}>Une autre façon d’explorer la méthode Pilates, avec simplicité et concentration.</p><Link href="/contact" className={s.textLink}>Me renseigner sur la pratique au sol <ArrowUpRight size={18}/></Link></div>
+        <div className={v.principles}><div className={v.principlesTop}><span>LES FONDAMENTAUX</span><Lotus className="h-10 w-14"/></div>{[["Respirer", "Donner un rythme au mouvement."], ["Se centrer", "Porter son attention sur le placement."], ["Contrôler", "Privilégier la qualité de chaque geste."]].map(([title,copy],i)=><div className={v.principle} key={title}><span>0{i+1}</span><div><h3>{title}</h3><p>{copy}</p></div></div>)}<p className={v.signature}>Moins de précipitation. Plus de sensations.</p></div>
+      </div></section>
+
+      <section id="commencer" className={`${s.wrap} ${v.start}`}>
+        <div className={v.sectionHeading}><div><p className={s.eyebrow}>03 — Votre rendez-vous avec vous</p><h2>Votre heure.<br /><em>Votre place.</em></h2></div><p className={v.description}>Pas besoin d’attendre le début d’un programme. Choisissez un créneau disponible pendant les horaires d’ouverture du studio.</p></div>
+        <div className={v.steps}>{[["Choisir son créneau", `Une séance de ${COURSE_DURATION_MINUTES} minutes, avec ${COURSE_MAX_CAPACITY} places maximum. Consultez les disponibilités et les plages du studio.`], ["Réserver sa place", "Vous venez pour la première fois ? Commencez sur le site. Déjà cliente ? Connectez-vous à votre espace pour réserver."], ["Garder le fil", "Retrouvez vos prochaines séances, votre abonnement et votre historique dans un espace personnel simple à consulter."]].map(([title,copy],i)=><article key={title}><span className={v.stepNumber}>0{i+1}</span><h3>{title}</h3><p>{copy}</p></article>)}</div>
+        <div className={v.discovery}><div><p className={s.eyebrow}>Le premier pas</p><h3>Une séance pour découvrir.</h3><p>Prenez le temps de rencontrer la pratique et le studio.</p></div><div className={v.price}><strong>{formatDzd(SINGLE_SESSION_OFFERS[0].priceDzd)}</strong><span>Séance découverte</span></div><Link href="/reservation" className={s.button}>Réserver ma séance <ArrowUpRight size={18}/></Link></div>
+        <div className={v.moreLinks}><Link href="/tarifs">Explorer les forfaits <ArrowRight size={16}/></Link><Link href="/horaires">Consulter les horaires <ArrowRight size={16}/></Link></div>
+      </section>
+
+      <section className={v.questions}><div className={`${s.wrap} ${v.questionsGrid}`}><div><p className={s.eyebrow}>Avant de commencer</p><h2>Les petits détails.<br /><em>Pour venir sereinement.</em></h2><p className={v.description}>Un besoin particulier ou une envie de séance privée ? Échangeons pour préparer votre venue.</p><a href="tel:0553021714" className={s.textLink}>05 53 02 17 14 <ArrowUpRight size={18}/></a></div><div className={v.faq}>{[["Je débute, par où commencer ?", "La séance découverte est un premier rendez-vous avec le studio. Indiquez à l’équipe que vous débutez pour faire le point sur votre expérience et vos attentes."], ["Reformer ou Pilates au sol ?", "Le Reformer utilise un appareil à ressorts et à sangles. Au sol, la pratique s’appuie sur le tapis et le poids du corps. Contactez le studio pour choisir la pratique et connaître ses disponibilités."], ["Comment gérer mes réservations ?", "Si vous êtes déjà cliente, connectez-vous à votre espace personnel. Vous pouvez y retrouver vos séances, réserver et annuler selon les conditions du studio."], ["Puis-je demander un accompagnement privé ?", "Contactez directement le studio pour discuter de votre demande et vérifier les possibilités, les disponibilités et les tarifs avant de réserver."]].map(([q,a])=><details key={q}><summary>{q}<Plus size={17} aria-hidden="true"/></summary><p>{a}</p></details>)}</div></div></section>
+    </main>
+    <footer className={s.footer}><div className={s.wrap}><div className={s.footerTop}><Link href="/" aria-label="Pilates Center — Accueil"><BrandLockup light/></Link><p>Force. Équilibre. Harmonie.</p><Link href="/reservation">Votre prochaine séance <ArrowUpRight size={16}/></Link></div><div className={s.footerBottom}><span>© {new Date().getFullYear()} Pilates Center Alger</span><nav aria-label="Informations légales"><Link href="/mentions-legales">Mentions légales</Link><Link href="/politique-de-confidentialite">Confidentialité</Link><Link href="/cgv">CGV</Link></nav></div></div></footer>
+    <PublicMobileBottomNav/>
+  </div>;
 }

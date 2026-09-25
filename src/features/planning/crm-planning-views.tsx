@@ -20,9 +20,13 @@ import {
   XCircle,
   Eye,
 } from "lucide-react";
-import { studioDateTime, studioDay, getDaysOfWeek, getDaysOfMonthGrid, monthRange, type PilatesSession } from "@/domain/models/planning";
+import { sessionPhase, studioDateTime, studioDay, getDaysOfWeek, getDaysOfMonthGrid, monthRange, type PilatesSession } from "@/domain/models/planning";
 import { Button } from "@/components/ui/button";
 import { SessionPreviewModal } from "./session-preview-modal";
+import styles from "./planning-premium.module.css";
+import { isSessionAvailable, sessionsInMonth } from "@/domain/models/planning-display";
+import { studioSlots } from "@/domain/models/studio-slots";
+import { usePlanningTime } from "./use-planning-time";
 
 export type ViewMode = "grid" | "day" | "week" | "month";
 
@@ -43,8 +47,9 @@ export function CrmPlanningViews({
   sessions,
   initialView = "week",
   initialDay,
-  now,
+  now: initialTime,
 }: CrmPlanningViewsProps) {
+  const now = usePlanningTime(initialTime);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -84,10 +89,10 @@ export function CrmPlanningViews({
       if (instructorFilter !== "all" && s.instructor !== instructorFilter) return false;
       if (statusFilter === "cancelled" && s.status !== "cancelled") return false;
       if (statusFilter === "full" && (s.status === "cancelled" || s.bookedCount < s.capacity)) return false;
-      if (statusFilter === "available" && (s.status === "cancelled" || s.bookedCount >= s.capacity)) return false;
+      if (statusFilter === "available" && !isSessionAvailable(s, now)) return false;
       return true;
     });
-  }, [sessions, instructorFilter, statusFilter]);
+  }, [sessions, instructorFilter, statusFilter, now]);
 
   // Handle URL updates when switching view or date
   const updateUrl = (newView: ViewMode, newDay: string) => {
@@ -157,19 +162,22 @@ export function CrmPlanningViews({
   }, [selectedDay, view, currentMonthStr]);
 
   // Overall Stats
-  const totalBooked = filteredSessions.reduce((acc, s) => acc + (s.status === "cancelled" ? 0 : s.bookedCount), 0);
-  const totalCapacity = filteredSessions.reduce((acc, s) => acc + (s.status === "cancelled" ? 0 : s.capacity), 0);
+  const summarySessions = view === "month" ? sessionsInMonth(filteredSessions, currentMonthStr) : filteredSessions;
+  const totalBooked = summarySessions.reduce((acc, s) => acc + (s.status === "cancelled" ? 0 : s.bookedCount), 0);
+  const totalCapacity = summarySessions.reduce((acc, s) => acc + (s.status === "cancelled" ? 0 : s.capacity), 0);
   const occupancyRate = totalCapacity > 0 ? Math.round((totalBooked / totalCapacity) * 100) : 0;
 
   return (
-    <div className="space-y-6">
+    <div className={styles.planning + " space-y-6"}>
       {/* TOOLBAR CONTROLS HEADER */}
-      <div className="flex flex-col gap-4 rounded-3xl border border-[#e5dbc9] bg-[#fffdf9] p-4 sm:p-6 shadow-sm">
+      <div className={styles.toolbar}>
         {/* Top Row: View Switcher & Actions */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           {/* Segmented Control Switcher */}
-          <div className="inline-flex rounded-2xl border border-[#ded4c3] bg-[#f7f2e9] p-1.5 shadow-inner">
+          <div className={styles.switcher} role="group" aria-label="Vue du planning">
             <button
+              aria-label="Vue grille"
+              aria-pressed={view === "grid"}
               onClick={() => updateUrl("grid", selectedDay)}
               className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
                 view === "grid"
@@ -178,10 +186,12 @@ export function CrmPlanningViews({
               }`}
             >
               <LayoutGrid size={17} />
-              <span className="hidden sm:inline">Grille</span>
+              <span className={styles.viewLabel}>Grille</span>
             </button>
 
             <button
+              aria-label="Vue journée"
+              aria-pressed={view === "day"}
               onClick={() => updateUrl("day", selectedDay)}
               className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
                 view === "day"
@@ -190,10 +200,12 @@ export function CrmPlanningViews({
               }`}
             >
               <Clock size={17} />
-              <span className="hidden sm:inline">Journée</span>
+              <span className={styles.viewLabel}>Journée</span>
             </button>
 
             <button
+              aria-label="Vue semaine"
+              aria-pressed={view === "week"}
               onClick={() => updateUrl("week", selectedDay)}
               className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
                 view === "week"
@@ -202,10 +214,12 @@ export function CrmPlanningViews({
               }`}
             >
               <CalendarRange size={17} />
-              <span className="hidden sm:inline">Semaine</span>
+              <span className={styles.viewLabel}>Semaine</span>
             </button>
 
             <button
+              aria-label="Vue mensuelle"
+              aria-pressed={view === "month"}
               onClick={() => updateUrl("month", selectedDay)}
               className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
                 view === "month"
@@ -214,7 +228,7 @@ export function CrmPlanningViews({
               }`}
             >
               <CalendarIcon size={17} />
-              <span className="hidden sm:inline">Mensuelle</span>
+              <span className={styles.viewLabel}>Mensuelle</span>
             </button>
           </div>
 
@@ -222,7 +236,7 @@ export function CrmPlanningViews({
           <div className="flex items-center gap-3">
             <Link
               href="/crm/planning/nouvelle"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#b7893b] hover:bg-[#a37830] px-4 py-2.5 text-sm font-semibold text-white shadow transition-all hover:scale-[1.02]"
+              className={styles.create}
             >
               <Plus size={18} />
               <span>Créer une séance</span>
@@ -231,7 +245,7 @@ export function CrmPlanningViews({
         </div>
 
         {/* Bottom Row: Navigation & Filters */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-[#eee5d8]">
+        <div className={styles.controls}>
           {/* Navigation Controls */}
           <div className="flex flex-wrap items-center gap-3">
             <Button
@@ -270,6 +284,7 @@ export function CrmPlanningViews({
               <div className="flex items-center gap-1.5">
                 <Filter size={14} className="text-[#887c6b]" />
                 <select
+                  aria-label="Filtrer par coach"
                   value={instructorFilter}
                   onChange={(e) => setInstructorFilter(e.target.value)}
                   className="rounded-xl border border-[#ded4c3] bg-[#fffdf9] px-3 py-1.5 text-xs font-medium text-[#443c30] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#b7893b]"
@@ -286,6 +301,7 @@ export function CrmPlanningViews({
 
             {/* Status filter */}
             <select
+              aria-label="Filtrer par statut"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="rounded-xl border border-[#ded4c3] bg-[#fffdf9] px-3 py-1.5 text-xs font-medium text-[#443c30] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#b7893b]"
@@ -298,6 +314,7 @@ export function CrmPlanningViews({
 
             {/* Date picker jump */}
             <input
+              aria-label="Choisir une date"
               type="date"
               value={selectedDay}
               onChange={(e) => e.target.value && updateUrl(view, e.target.value)}
@@ -307,10 +324,10 @@ export function CrmPlanningViews({
         </div>
 
         {/* Period Summary Stats Pill */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#f8f4ec] px-4 py-2.5 text-xs text-[#6e6353]">
+        <div className={styles.summary}>
           <div className="flex flex-wrap gap-4 font-medium">
             <span>
-              <strong className="text-[#111]">{filteredSessions.length}</strong> séance(s) au total
+              <strong className="text-[#111]">{summarySessions.length}</strong> séance(s) au total
             </span>
             <span>·</span>
             <span>
@@ -377,7 +394,7 @@ function GridView({
 }) {
   if (sessions.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-[#c9bda8] bg-[#fffdf9] p-12 text-center shadow-sm">
+      <div className="rounded-2xl border border-dashed border-[#c9bda8] bg-[#fffdf9] p-12 text-center shadow-sm">
         <CalendarDays size={40} className="mx-auto mb-3 text-[#b7893b] opacity-80" />
         <h3 className="font-serif text-2xl text-[#111]">Aucune séance sur cette sélection</h3>
         <p className="mt-2 text-sm text-[#776c5c]">
@@ -390,14 +407,15 @@ function GridView({
   return (
     <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
       {sessions.map((s) => {
-        const ended = s.startsAt <= now;
+        const phase = sessionPhase(s, now);
+        const ended = phase === "ended";
         const available = s.capacity - s.bookedCount;
         const fillPercent = Math.min(100, Math.round((s.bookedCount / s.capacity) * 100));
 
         return (
           <article
             key={s.id}
-            className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-[#ded4c3] bg-[#fffdf9] p-6 shadow-sm hover:shadow-md hover:border-[#b7893b] transition-all"
+            className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#ded4c3] bg-[#fffdf9] p-6 shadow-sm hover:shadow-md hover:border-[#b7893b] transition-all"
           >
             {/* Top Accent Bar */}
             <div
@@ -432,6 +450,8 @@ function GridView({
                   <span className="inline-flex items-center gap-1 rounded-full bg-[#eee5d8] px-3 py-1 text-xs font-medium text-[#736857]">
                     Terminée
                   </span>
+                ) : phase === "ongoing" ? (
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-800">En cours</span>
                 ) : available === 0 ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
                     <AlertCircle size={13} /> Complet
@@ -535,7 +555,7 @@ function DayView({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-3xl border border-[#ded4c3] bg-[#fffdf9] p-6 shadow-sm">
+      <div className="rounded-2xl border border-[#ded4c3] bg-[#fffdf9] p-6 shadow-sm">
         <h3 className="font-serif text-xl font-medium text-[#111] mb-4">
           Agenda de la journée
         </h3>
@@ -565,15 +585,16 @@ function DayView({
                   <div className="space-y-2">
                     {hourSessions.length === 0 ? (
                       <div className="h-full rounded-xl border border-dashed border-transparent hover:border-[#e0d6c5] transition-colors p-2 text-xs text-[#a09484]">
-                        Libre
+                        {[...studioSlots(selectedDay, "femme"), ...studioSlots(selectedDay, "homme")].some(slot => studioDateTime(slot.startsAt).slice(11, 13) === String(hour).padStart(2, "0")) ? "Aucune séance affichée" : "Fermé"}
                       </div>
                     ) : (
                       hourSessions.map((s) => {
-                        const ended = s.startsAt <= now;
+                        const phase = sessionPhase(s, now);
+                        const ended = phase === "ended";
                         return (
                           <div
                             key={s.id}
-                            className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4 shadow-sm transition-all hover:scale-[1.01] ${
+                            className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4 shadow-sm transition-all hover:shadow-md ${
                               s.status === "cancelled"
                                 ? "bg-rose-50/50 border-rose-200"
                                 : ended
@@ -590,6 +611,7 @@ function DayView({
                                 <h4 className="font-serif text-lg font-medium text-[#111]">
                                   {s.title}
                                 </h4>
+                                <p className="text-xs text-[#786c5c]">{phase === "cancelled" ? "Annulée" : phase === "ongoing" ? "En cours" : ended ? "Terminée" : "À venir"}</p>
                                 <p className="text-xs text-[#786c5c]">
                                   Coach {s.instructor}
                                 </p>
@@ -655,8 +677,8 @@ function WeekView({
   const weekDays = useMemo(() => getDaysOfWeek(selectedDay), [selectedDay]);
 
   return (
-    <div className="overflow-x-auto rounded-3xl border border-[#ded4c3] bg-[#fffdf9] shadow-sm p-4 sm:p-6">
-      <div className="min-w-[900px] grid grid-cols-7 gap-3">
+    <div className={styles.calendar} role="region" aria-label="Calendrier de la semaine, défilement horizontal" tabIndex={0}>
+      <div className={styles.weekGrid}>
         {weekDays.map((dayStr, index) => {
           const isToday = dayStr === todayStr;
           const dayNum = parseInt(dayStr.slice(8, 10), 10);
@@ -703,12 +725,14 @@ function WeekView({
                   </p>
                 ) : (
                   daySessions.map((s) => {
-                    const ended = s.startsAt <= now;
+                    const phase = sessionPhase(s, now);
+                    const ended = phase === "ended";
                     return (
-                      <div
+                      <button
+                        type="button"
                         key={s.id}
                         onClick={() => onPreview(s)}
-                        className={`group relative block rounded-xl border p-2.5 text-xs shadow-2xs cursor-pointer transition-all hover:scale-[1.02] ${
+                        className={`group relative block w-full text-left rounded-xl border p-2.5 text-xs shadow-2xs cursor-pointer transition-all hover:shadow-md ${
                           s.status === "cancelled"
                             ? "bg-rose-50 border-rose-200 text-rose-900"
                             : ended
@@ -727,7 +751,8 @@ function WeekView({
                           {s.title}
                         </p>
                         <p className="text-[11px] text-[#786b5b] truncate">Coach {s.instructor}</p>
-                      </div>
+                        <p className="mt-1 text-[10px]">{phase === "cancelled" ? "Annulée" : phase === "ongoing" ? "En cours" : ended ? "Terminée" : "À venir"}</p>
+                      </button>
                     );
                   })
                 )}
@@ -770,7 +795,7 @@ function MonthView({
   }, [sessions]);
 
   return (
-    <div className="rounded-3xl border border-[#ded4c3] bg-[#fffdf9] p-4 sm:p-6 shadow-sm overflow-x-auto">
+    <div className={styles.calendar} role="region" aria-label="Calendrier du mois, défilement horizontal" tabIndex={0}>
       <div className="min-w-[750px]">
         {/* Day Header Row */}
         <div className="grid grid-cols-7 gap-2 mb-3 text-center border-b border-[#eee3d1] pb-2">
@@ -790,7 +815,6 @@ function MonthView({
             return (
               <div
                 key={date}
-                onClick={() => onSelectDay(date)}
                 className={`group flex flex-col justify-between rounded-2xl border p-2.5 min-h-[105px] cursor-pointer transition-all hover:border-[#b7893b] ${
                   isToday
                     ? "border-[#b7893b] bg-[#fcf8f0] shadow-sm"
@@ -799,7 +823,7 @@ function MonthView({
                     : "border-transparent bg-[#f9f6f0] opacity-40"
                 }`}
               >
-                <div className="flex items-center justify-between">
+                <button type="button" onClick={() => onSelectDay(date)} aria-label={`Ouvrir la journée du ${date}`} className="flex items-center justify-between text-left">
                   <span
                     className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
                       isToday
@@ -817,18 +841,19 @@ function MonthView({
                       {daySessions.length}
                     </span>
                   )}
-                </div>
+                </button>
 
                 {/* Session Chips */}
                 <div className="mt-1 space-y-1">
                   {daySessions.slice(0, 2).map((s) => (
-                    <div
+                    <button
+                      type="button"
                       key={s.id}
                       onClick={(e) => {
                         e.stopPropagation();
                         onPreview(s);
                       }}
-                      className={`truncate rounded-lg px-1.5 py-0.5 text-[10px] font-semibold cursor-pointer transition-all hover:scale-[1.03] ${
+                      className={`block w-full text-left truncate rounded-lg px-1.5 py-0.5 text-[10px] font-semibold cursor-pointer transition-all hover:scale-[1.03] ${
                         s.status === "cancelled"
                           ? "bg-rose-100 text-rose-800"
                           : "bg-[#f4ebe0] text-[#6b4c1b] hover:bg-[#ede0c8]"
@@ -836,12 +861,12 @@ function MonthView({
                       title="Cliquer pour aperçu"
                     >
                       {studioDateTime(s.startsAt).slice(11)} {s.title}
-                    </div>
+                    </button>
                   ))}
                   {daySessions.length > 2 && (
-                    <div className="text-[10px] font-bold text-[#8b652b] pl-1">
+                    <button type="button" onClick={() => onSelectDay(date)} className="text-[10px] font-bold text-[#8b652b] pl-1">
                       +{daySessions.length - 2} autre(s)
-                    </div>
+                    </button>
                   )}
                 </div>
               </div>
@@ -852,4 +877,3 @@ function MonthView({
     </div>
   );
 }
-

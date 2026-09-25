@@ -112,3 +112,10 @@ export type ReservationsPage = {
   items: ReservationRecord[];
   nextCursor: string | null;
 };
+
+/** Display phase only; booking and cancellation still close at the start. */
+export function sessionPhase(session: Pick<PilatesSession, "startsAt" | "durationMinutes" | "status">, now: number): "cancelled" | "upcoming" | "ongoing" | "ended" {
+  if (session.status === "cancelled") return "cancelled";
+  if (now < session.startsAt) return "upcoming";
+  return now < session.startsAt + session.durationMinutes * 60000 ? "ongoing" : "ended";
+}

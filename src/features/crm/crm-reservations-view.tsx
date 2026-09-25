@@ -22,6 +22,7 @@ import {
 import { studioDateTime, type ReservationRecord } from "@/domain/models/planning";
 import { Button } from "@/components/ui/button";
 import { SessionPreviewModal } from "@/features/planning/session-preview-modal";
+import styles from "./reservations.module.css";
 
 interface CrmReservationsViewProps {
   initialItems: ReservationRecord[];
@@ -122,14 +123,18 @@ export function CrmReservationsView({
   const cancelledCount = items.filter((i) => i.bookingStatus === "cancelled").length;
 
   return (
-    <div className="space-y-6">
+    <div className={styles.reservations + " space-y-6"}>
+      <section aria-label="Synthèse des réservations chargées" className={styles.stats}>
+        {[{ label: "Chargées", value: items.length, icon: BookmarkCheck }, { label: "Confirmées", value: confirmedCount, icon: CheckCircle2 }, { label: "Présentes", value: presentCount, icon: UserCheck }, { label: "Absentes", value: absentCount, icon: UserX }, { label: "Annulées", value: cancelledCount, icon: XCircle }].map(({label, value, icon: Icon}) => <article key={label} className={styles.stat}><div><span>{label}</span><Icon size={17} aria-hidden="true" /></div><strong>{value}</strong></article>)}
+      </section>
       {/* TOOLBAR CONTROLS HEADER */}
-      <div className="flex flex-col gap-4 rounded-3xl border border-[#e5dbc9] bg-[#fffdf9] p-4 sm:p-6 shadow-sm">
+      <div className={styles.toolbar}>
         {/* Top Row: View Switcher & Search */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           {/* Segmented Control Switcher */}
-          <div className="inline-flex rounded-2xl border border-[#ded4c3] bg-[#f7f2e9] p-1.5 shadow-inner">
+          <div className={styles.switcher} role="group" aria-label="Présentation des réservations">
             <button
+              aria-pressed={view === "grid"}
               onClick={() => setView("grid")}
               className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
                 view === "grid"
@@ -138,10 +143,11 @@ export function CrmReservationsView({
               }`}
             >
               <LayoutGrid size={17} />
-              <span>Grille Sublime</span>
+              <span>Grille</span>
             </button>
 
             <button
+              aria-pressed={view === "list"}
               onClick={() => setView("list")}
               className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
                 view === "list"
@@ -150,16 +156,17 @@ export function CrmReservationsView({
               }`}
             >
               <ListFilter size={17} />
-              <span>Vue Liste</span>
+              <span>Liste</span>
             </button>
           </div>
 
           {/* Search Box */}
-          <div className="relative min-w-[240px] flex-1 max-w-md">
+          <div className={styles.search}>
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#988c7b]" size={16} />
             <input
+              aria-label="Rechercher une cliente ou une séance"
               type="text"
-              placeholder="Rechercher par cliente ou par cours..."
+              placeholder="Rechercher une cliente ou une séance…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-2xl border border-[#ded4c3] bg-[#fffdf9] pl-10 pr-4 py-2 text-xs font-medium text-[#443c30] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#b7893b]"
@@ -176,6 +183,7 @@ export function CrmReservationsView({
 
             {/* Booking status */}
             <select
+              aria-label="Statut de réservation"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="rounded-xl border border-[#ded4c3] bg-[#fffdf9] px-3 py-1.5 text-xs font-medium text-[#443c30] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#b7893b]"
@@ -187,6 +195,7 @@ export function CrmReservationsView({
 
             {/* Attendance status */}
             <select
+              aria-label="Statut de présence"
               value={attendanceFilter}
               onChange={(e) => setAttendanceFilter(e.target.value)}
               className="rounded-xl border border-[#ded4c3] bg-[#fffdf9] px-3 py-1.5 text-xs font-medium text-[#443c30] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#b7893b]"
@@ -200,7 +209,8 @@ export function CrmReservationsView({
             {/* Coach filter */}
             {instructors.length > 0 && (
               <select
-                value={instructorFilter}
+                aria-label="Coach"
+              value={instructorFilter}
                 onChange={(e) => setInstructorFilter(e.target.value)}
                 className="rounded-xl border border-[#ded4c3] bg-[#fffdf9] px-3 py-1.5 text-xs font-medium text-[#443c30] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#b7893b]"
               >
@@ -219,29 +229,7 @@ export function CrmReservationsView({
           </div>
         </div>
 
-        {/* Stats Pill */}
-        <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-[#f8f4ec] px-4 py-2.5 text-xs text-[#6e6353]">
-          <span className="flex items-center gap-1.5 font-medium">
-            <BookmarkCheck size={14} className="text-[#b7893b]" /> Total chargées :{" "}
-            <strong className="text-[#111]">{items.length}</strong>
-          </span>
-          <span>·</span>
-          <span>
-            Confirmées : <strong className="text-emerald-700">{confirmedCount}</strong>
-          </span>
-          <span>·</span>
-          <span>
-            Présentes : <strong className="text-[#8b652b]">{presentCount}</strong>
-          </span>
-          <span>·</span>
-          <span>
-            Absentes : <strong className="text-amber-800">{absentCount}</strong>
-          </span>
-          <span>·</span>
-          <span>
-            Annulées : <strong className="text-rose-700">{cancelledCount}</strong>
-          </span>
-        </div>
+
       </div>
 
       {loadError && <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">{loadError} {!nextCursor && <button type="button" onClick={() => window.location.reload()} className="ml-2 underline">Réessayer</button>}</div>}
@@ -299,7 +287,7 @@ function GridView({
 }) {
   if (items.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-[#c9bda8] bg-[#fffdf9] p-12 text-center shadow-sm">
+      <div className="rounded-2xl border border-dashed border-[#c9bda8] bg-[#fffdf9] p-12 text-center shadow-sm">
         <BookmarkCheck size={40} className="mx-auto mb-3 text-[#b7893b] opacity-80" />
         <h3 className="font-serif text-2xl text-[#111]">Aucune réservation trouvée</h3>
         <p className="mt-2 text-sm text-[#776c5c]">
@@ -322,11 +310,11 @@ function GridView({
         return (
           <article
             key={item.id}
-            className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-[#ded4c3] bg-[#fffdf9] p-6 shadow-sm hover:shadow-md hover:border-[#b7893b] transition-all"
+            className={styles.card}
           >
             {/* Top Bar Status */}
             <div
-              className={`absolute top-0 left-0 right-0 h-1.5 ${
+              className={`absolute top-0 left-0 right-0 h-0.5 ${
                 item.bookingStatus === "cancelled"
                   ? "bg-rose-500"
                   : item.attendanceStatus === "present"
@@ -339,8 +327,8 @@ function GridView({
 
             <div className="space-y-4 pt-1">
               {/* Header: Client Info */}
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
+              <div className={styles.cardHeader}>
+                <div className="flex min-w-0 items-center gap-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#b7893b] text-xs font-bold text-black shadow-inner">
                     {initials || "CL"}
                   </span>
@@ -436,7 +424,7 @@ function ListView({
 }) {
   if (items.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-[#c9bda8] bg-[#fffdf9] p-12 text-center shadow-sm">
+      <div className="rounded-2xl border border-dashed border-[#c9bda8] bg-[#fffdf9] p-12 text-center shadow-sm">
         <BookmarkCheck size={40} className="mx-auto mb-3 text-[#b7893b] opacity-80" />
         <h3 className="font-serif text-2xl text-[#111]">Aucune réservation dans la liste</h3>
         <p className="mt-2 text-sm text-[#776c5c]">
@@ -447,16 +435,16 @@ function ListView({
   }
 
   return (
-    <div className="overflow-x-auto rounded-3xl border border-[#ded4c3] bg-[#fffdf9] shadow-sm">
-      <table className="w-full text-left text-sm">
+    <div className={styles.tableWrap} role="region" aria-label="Liste des réservations, défilement horizontal" tabIndex={0}>
+      <table className="w-full text-left text-sm"><caption className="sr-only">Réservations chargées correspondant aux filtres sélectionnés</caption>
         <thead className="border-b border-[#eee3d1] bg-[#fbf7ef] text-xs font-bold text-[#8c8070] uppercase tracking-wider">
           <tr>
-            <th className="px-6 py-4">Cliente</th>
-            <th className="px-6 py-4">Cours & Date</th>
-            <th className="px-6 py-4">Coach</th>
-            <th className="px-6 py-4">Statut Réservation</th>
-            <th className="px-6 py-4">Émargement</th>
-            <th className="px-6 py-4 text-right">Actions</th>
+            <th scope="col" className="px-6 py-4">Cliente</th>
+            <th scope="col" className="px-6 py-4">Cours & Date</th>
+            <th scope="col" className="px-6 py-4">Coach</th>
+            <th scope="col" className="px-6 py-4">Statut Réservation</th>
+            <th scope="col" className="px-6 py-4">Émargement</th>
+            <th scope="col" className="px-6 py-4 text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[#f2e9dc]">
@@ -475,7 +463,7 @@ function ListView({
               >
                 {/* Cliente */}
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#b7893b] text-xs font-bold text-black">
                       {initials || "CL"}
                     </span>

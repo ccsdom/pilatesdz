@@ -5,7 +5,9 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, Res
 import { ArrowUpRight, BarChart3, CalendarDays, Clock, CreditCard, Download, RefreshCw } from "lucide-react";
 import { type MonthlyCash, type MonthlyPlanning } from "@/domain/models/dashboard-charts";
 
-const surface = "min-w-0 max-w-full rounded-2xl border border-[#ded4c3] bg-[#fffdf9] p-5 dark:border-[#332e26] dark:bg-[#181613]";
+import styles from "./dashboard.module.css";
+
+const surface = styles.chartCard + " min-w-0 max-w-full rounded-2xl border border-[#ded4c3] bg-[#fffdf9] p-5 dark:border-[#332e26] dark:bg-[#181613]";
 const muted = "text-[#807563] dark:text-[#b7a993]";
 const colors = ["#b7893b", "#7b8775", "#897068", "#697b89", "#bcaa8a", "#988aab"];
 const money = (minor: number) => `${(minor / 100).toLocaleString("fr-FR", { maximumFractionDigits: 2 })} DA`;
@@ -17,10 +19,10 @@ const fullDay = (value: unknown) => new Date(`${String(value)}T12:00:00Z`).toLoc
 export function DashboardCharts({ month, planning, cash, planningError, cashError }: { month: string; planning: MonthlyPlanning | null; cash: MonthlyCash | null; planningError?: string; cashError?: string }) {
   const exportUrl = `/api/crm/statistiques/export?month=${encodeURIComponent(month)}`;
   const monthLabel = new Date(`${month}-01T12:00:00Z`).toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
-  return <section className="min-w-0 max-w-full space-y-5" aria-label="Statistiques mensuelles">
+  return <section className={styles.charts + " min-w-0 max-w-full space-y-5"} aria-label="Statistiques mensuelles">
     <header className="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#a77b37]">Le centre en chiffres</p>
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#a77b37]">03 — Le centre en chiffres</p>
         <h2 className="font-serif text-3xl">Activité du mois</h2>
         <p className={`mt-2 text-xs ${muted}`}>Planning complet du mois sélectionné, séances passées et à venir.</p>
       </div>

@@ -39,7 +39,7 @@ export function ClientShell({ centerId, children, active = "clients" }: { center
       {/* Main Content Area */}
       <div className="min-w-0 flex-1 flex flex-col pb-20 lg:pb-0">
         <CrmHeader centerId={centerId} title={active === "dashboard" ? "Tableau de bord" : undefined} />
-        <main className="mx-auto max-w-6xl w-full space-y-7 px-4 py-6 sm:px-7 flex-1">{children}</main>
+        <main className="mx-auto min-w-0 max-w-6xl w-full space-y-7 px-4 py-6 sm:px-7 flex-1">{children}</main>
       </div>
 
       {/* Native Mobile Bottom Navigation Bar for Managers (CRM) */}

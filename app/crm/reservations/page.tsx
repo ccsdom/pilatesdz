@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { CalendarDays, ArrowUpRight } from "lucide-react";
+import styles from "@/features/crm/reservations.module.css";
 import { getPageAccess } from "@/lib/auth/page-access";
 import { getPlanningService } from "@/lib/planning/server";
 import { ClientShell } from "@/features/clients/client-shell";
@@ -29,19 +31,9 @@ export default async function Page() {
 
   return (
     <ClientShell centerId={result.access.centerId} active="reservations">
-      <header className="flex flex-wrap items-end justify-between gap-5">
-        <div>
-          <p className="mb-2 text-sm text-[#957035]">Gestion des séances et assiduité</p>
-          <h1 className="font-serif text-5xl">Réservations</h1>
-        </div>
-        <div className="flex flex-wrap items-center gap-4">
-          <Link
-            href="/crm/planning"
-            className="rounded-xl bg-[#111] px-5 py-3 text-sm font-semibold text-white shadow hover:bg-[#222] transition-all"
-          >
-            Ouvrir le Planning
-          </Link>
-        </div>
+      <header className={styles.hero}>
+        <div><p className={styles.eyebrow}>PILATES DZ · Réservations</p><h1>Chaque rendez-vous<br /><em>compte.</em></h1><p className={styles.intro}>Retrouvez les réservations de vos clientes et suivez leur présence, en toute clarté.</p></div>
+        <Link href="/crm/planning" className={styles.planningLink}><CalendarDays size={18} aria-hidden="true" />Ouvrir le planning<ArrowUpRight size={17} aria-hidden="true" /></Link>
       </header>
 
       <CrmReservationsView

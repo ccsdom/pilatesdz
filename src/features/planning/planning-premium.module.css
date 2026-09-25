@@ -1,0 +1,39 @@
+.hero { display:flex; align-items:center; justify-content:space-between; gap:32px; padding:32px; border-radius:20px; background:radial-gradient(ellipse at top right,#a78b5030,transparent 65%),#252d27; color:#faf6ec; }
+.eyebrow { font-size:10px; text-transform:uppercase; letter-spacing:.2em; color:#d8bf90; margin-bottom:18px; }
+.hero h1 { font-family:Georgia,serif; font-size:clamp(32px,3.5vw,46px); font-weight:400; line-height:1.15; letter-spacing:-.035em; }
+.hero h1 em { color:#d9bf91; font-weight:400; }
+.description { font-size:13px; line-height:1.8; color:#d0d1c7; max-width:420px; margin-top:16px; }
+.presences { display:flex; align-items:center; gap:14px; padding:20px; border:1px solid #ffffff30; border-radius:12px; font-size:13px; transition:background .2s; }
+.presences svg { color:#d9bf91; flex-shrink:0; }
+.presences small { display:block; font-size:11px; color:#cbcbbb; margin-top:6px; }
+.presences:hover { background:#ffffff0b; }
+.planning { min-width:0; --paper:#fffcf7; --line:#e0d9cd; --ink:#292d26; --muted:#716e64; }
+.toolbar { padding:24px; border:1px solid var(--line); border-radius:16px; background:var(--paper); display:flex; flex-direction:column; gap:22px; }
+.switcher { display:inline-flex; flex-wrap:wrap; gap:3px; padding:5px; border:1px solid var(--line); background:#f2eee5; border-radius:11px; }
+.switcher button { padding:10px 13px; border-radius:7px; font-size:12px; font-weight:500; }
+.viewLabel { display:block; }
+.switcher button[aria-pressed="true"] { background:#29352c; color:#fff8ec; box-shadow:0 2px 6px #26302015; }
+.create { display:inline-flex; align-items:center; gap:9px; padding:13px 18px; border-radius:9px; background:#29352c; color:#faf6ec; font-size:12px; font-weight:600; }
+.create svg { color:#d9bf91; }
+.create:hover { background:#39483c; }
+.controls { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:20px; border-top:1px solid var(--line); padding-top:22px; }
+.controls select,.controls input { min-height:39px; max-width:100%; box-shadow:none; border-radius:8px; }
+.controls h2 { font-size:24px; font-weight:400; letter-spacing:-.025em; }
+.summary { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; padding:17px 18px; border:1px solid var(--line); border-radius:10px; background:#f5f1e9; font-size:12px; color:#716757; }
+.summary strong { font-size:16px; font-variant-numeric:tabular-nums; font-weight:600; }
+.calendar { background:var(--paper); padding:20px; border:1px solid var(--line); border-radius:16px; overflow-x:auto; scrollbar-width:thin; scrollbar-color:#b9a785 transparent; }
+.weekGrid { min-width:1120px; display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:10px; }
+.weekGrid > div { padding:12px 10px; border-radius:10px; }
+.weekGrid h4 { font-size:29px; font-weight:400; margin-top:10px; }
+.planning :is(a,button,input,select,[tabindex]):focus-visible,.hero a:focus-visible { outline:2px solid #ac8549; outline-offset:4px; }
+.planning article { box-shadow:0 5px 18px #352f2105; }
+.planning article h3 { letter-spacing:-.025em; }
+:global(.dark) .planning { --paper:#1b1f19; --line:#393b32; --ink:#f0ede4; --muted:#b8b6a8; }
+:global(.dark) .planning :is([class*="bg-[#fff"],[class*="bg-[#fbf"],[class*="bg-[#fcf"],[class*="bg-[#f5"],[class*="bg-[#f9"],[class*="bg-[#f4"],[class*="bg-[#f7"]) { background-color:#23271f; }
+:global(.dark) .planning :is([class*="text-[#111]"],[class*="text-[#443"],[class*="text-[#554"],[class*="text-[#665"]) { color:#f0ede4; }
+:global(.dark) .planning :is([class*="text-[#7"],[class*="text-[#8"],[class*="text-[#6"],[class*="text-[#a0"],[class*="text-[#a3"]) { color:#c8bda8; }
+:global(.dark) .switcher,:global(.dark) .summary { background:#252b22; color:#c8bda8; }
+:global(.dark) .planning [class*="border-[#"] { border-color:#454637; }
+@media(max-width:850px) { .hero { align-items:stretch; flex-direction:column; gap:24px; } .presences { align-self:flex-start; } }
+@media(max-width:640px) { .hero { padding:24px; border-radius:16px; } .toolbar { padding:16px; gap:18px; } .switcher { width:100%; justify-content:space-between; } .switcher button { flex:1; flex-direction:column; gap:5px; padding:9px 6px; font-size:10px; } .controls h2 { width:100%; font-size:22px; } .calendar { padding:12px; } .summary > div { gap:10px; } .summary > div > span:nth-child(even) { display:none; } .presences { width:100%; padding:16px; } .create { min-height:44px; } }
+@media(prefers-reduced-motion:reduce) { .planning *,.hero * { transition:none; } }

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ArrowUpRight, ClipboardCheck } from "lucide-react";
+import styles from "@/features/planning/planning-premium.module.css";
 import { getPageAccess } from "@/lib/auth/page-access";
 import { getPlanningService } from "@/lib/planning/server";
 import { studioDay, getDaysOfWeek, getDaysOfMonthGrid, type PilatesSession } from "@/domain/models/planning";
@@ -56,25 +58,9 @@ export default async function Page({
 
   return (
     <ClientShell centerId={result.access.centerId} active="planning">
-      <header className="flex flex-wrap items-end justify-between gap-5">
-        <div>
-          <p className="mb-2 text-sm text-[#957035]">Les séances du centre</p>
-          <h1 className="font-serif text-5xl">Planning CRM</h1>
-        </div>
-        <div className="flex flex-wrap items-center gap-4">
-          <Link
-            href="/crm/presences"
-            className="text-sm font-semibold text-[#8d6729] underline hover:text-[#111] transition-colors"
-          >
-            Voir les présences à renseigner
-          </Link>
-          <Link
-            href="/crm/planning/nouvelle"
-            className="rounded-xl bg-[#111] px-5 py-3 text-sm font-semibold text-white shadow hover:bg-[#222] transition-all"
-          >
-            + Créer une séance
-          </Link>
-        </div>
+      <header className={styles.hero}>
+        <div><p className={styles.eyebrow}>PILATES DZ · Le planning</p><h1>Chaque heure,<br /><em>une nouvelle énergie.</em></h1><p className={styles.description}>Organisez les créneaux, visualisez les places et accompagnez chaque séance.</p></div>
+        <Link href="/crm/presences" className={styles.presences}><ClipboardCheck size={20} aria-hidden="true" /><span>Suivi des présences<small>Voir les présences à renseigner</small></span><ArrowUpRight size={18} aria-hidden="true" /></Link>
       </header>
 
       <CrmPlanningViews
