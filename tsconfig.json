@@ -50,6 +50,8 @@
     ".sites-runtime",
     ".wrangler",
     ".vinext",
-    ".pnpm-store"
+    ".pnpm-store",
+    "tests/e2e",
+    "playwright.config.ts"
   ]
 }

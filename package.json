@@ -20,6 +20,7 @@
     "seed:local": "node --experimental-strip-types scripts/seed-local.mjs",
     "sync:local": "node --experimental-strip-types scripts/sync-clients-local.mjs",
     "test:auth": "node scripts/firebase-local.mjs auth-test",
+    "test:e2e": "playwright test",
     "inbox:local": "node scripts/inbox-local.mjs"
   },
   "dependencies": {

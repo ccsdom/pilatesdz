@@ -1,0 +1,18 @@
+{
+  "name": "Pilates Center Alger - Studio CRM & Public",
+  "short_name": "Pilates Alger",
+  "description": "Plateforme de réservation et gestion du studio Pilates Center Alger",
+  "start_url": "/crm",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#18181b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

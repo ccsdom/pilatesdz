@@ -13,6 +13,8 @@ import { publicDayQuery, readSlotOccupancy } from "@/repositories/firestore/publ
 import { isTrustedMutation, readLimitedBody } from "@/lib/auth/request-policy";
 import { ManagementError } from "@/domain/ports/access-management";
 import { getAccountProvisioner } from "@/lib/auth/access-management";
+import { extractIdempotencyKey } from "@/lib/auth/idempotency";
+import { getClientIp, rateLimiter } from "@/lib/auth/rate-limit";
 
 export const runtime = "nodejs";
 const input = z.object({
@@ -27,10 +29,25 @@ const digest = (value: string) => createHash("sha256").update(value).digest("hex
 
 export async function POST(request: NextRequest) {
   if (!isTrustedMutation(request.headers.get("origin"), request.headers.get("content-type"), process.env.APP_ORIGIN)) return json({ error: "Requête non autorisée." }, 403);
+
+  const clientIp = getClientIp(request.headers);
+  const limit = rateLimiter.check(`reservation_${clientIp}`, { windowMs: 60000, max: 30 });
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: "Trop de requêtes. Veuillez patienter un instant." },
+      { status: 429, headers: { "Retry-After": Math.ceil(limit.resetMs / 1000).toString(), "Cache-Control": "no-store" } }
+    );
+  }
+
   let raw: string;
   try { raw = await readLimitedBody(request); } catch { return json({ error: "Requête trop volumineuse." }, 413); }
   let data;
-  try { data = input.parse(JSON.parse(raw)); } catch { return json({ error: "Vérifiez vos coordonnées et le créneau. Pour utiliser un forfait, connectez-vous à votre espace." }, 400); }
+  try {
+    const rawParsed = JSON.parse(raw);
+    const headerKey = extractIdempotencyKey(request.headers, rawParsed);
+    if (headerKey) rawParsed.requestId = headerKey;
+    data = input.parse(rawParsed);
+  } catch { return json({ error: "Vérifiez vos coordonnées et le créneau. Pour utiliser un forfait, connectez-vous à votre espace." }, 400); }
   const now = Date.now();
   try { bookingCalendarDate(data.date); } catch { return json({ error: "Date invalide." }, 400); }
   if (data.date < firstBookingDay(now) || !data.clientPhone) return json({ error: "Choisissez une date à partir de demain et renseignez votre téléphone." }, 400);

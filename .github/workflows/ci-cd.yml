@@ -1,0 +1,101 @@
+name: CI/CD Pipeline - Pilates Center Alger
+
+on:
+  push:
+    branches: [ main, master, "codex/*" ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  quality-and-unit-tests:
+    name: 🧪 Quality, Types & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v22)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 11.25.0
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript Strict Check
+        run: pnpm typecheck
+
+      - name: ESLint Code Quality
+        run: pnpm lint
+
+      - name: Vitest Unit & Integration Tests
+        run: pnpm test
+
+  security-rules-audit:
+    name: 🛡️ Firebase Security Rules Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js & pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 11.25.0
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Firebase Local Emulators Security Test
+        run: pnpm test:security
+
+  build-and-preview:
+    name: 🚀 Production Build & Deployment Preview
+    needs: [quality-and-unit-tests, security-rules-audit]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js & pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.0"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 11.25.0
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Next.js Production Build
+        run: pnpm build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          APP_ORIGIN: "https://pilates-center-alger.web.app"
+          CENTER_ID: "alger"
